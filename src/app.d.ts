@@ -21,11 +21,22 @@ declare global {
 			name: string;
 			price: number;
 			id: string;
+			color:
+				| 'red'
+				| 'green'
+				| 'blue'
+				| 'yellow'
+				| 'purple'
+				| 'orange'
+				| 'pink'
+				| 'teal'
+				| undefined;
+			hideInOrders: boolean?;
 		}
 
 		interface Category {
 			name: string;
-			color: 'red' | 'green' | 'blue' | 'yellow' | 'purple' | 'orange' | 'pink' | 'teal';
+			color: 'red' | 'green' | 'blue' | 'yellow' | 'purple' | 'orange' | 'pink' | 'teal' | 'rose';
 			items: Item[];
 		}
 

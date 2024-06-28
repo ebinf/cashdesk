@@ -9,6 +9,7 @@
 	import CancelModal from './CancelModal.svelte';
 	import { config } from '$lib/store';
 	import { goto } from '$app/navigation';
+	import { itemIdToItem } from '$lib/utils';
 
 	if (!$config) {
 		goto('/');
@@ -61,13 +62,17 @@
 
 	const submitOrder = () => {
 		orderNumber++;
-		orderBacklog.push({
-			id: orderNumber,
-			timestamp: Date.now(),
-			totalPrice: totalPrice,
-			items: Object.fromEntries(currentOrder.entries())
-		});
-		orderBacklog = [...orderBacklog];
+		let relevantItems = Array.from(currentOrder.entries());
+		relevantItems = relevantItems.filter(([id, _]) => !itemIdToItem(data.config, id)?.hideInOrders);
+		if (relevantItems.length > 0) {
+			orderBacklog.push({
+				id: orderNumber,
+				timestamp: Date.now(),
+				totalPrice: totalPrice,
+				items: Object.fromEntries(relevantItems)
+			});
+			orderBacklog = [...orderBacklog];
+		}
 		currentOrder = new Map();
 	};
 
@@ -83,7 +88,7 @@
 
 <div class="flex flex-row h-full gap-10">
 	<div class="bg-gray-50 w-3/4 rounded-xl shadow-2xl flex flex-row relative">
-		<div class="w-2/3 flex flex-col">
+		<div class="w-3/4 flex flex-col">
 			<div class="flex flex-row text-2xl font-semibold text-gray-800 p-4 border-b border-gray-200">
 				<p class="grow">
 					<img src="/logo.svg" alt="Logo" class="h-8 inline" />

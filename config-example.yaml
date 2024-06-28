@@ -3,6 +3,7 @@ currency:
   before:
   after: '€'
   digits: 2
+itemsPerRow: 5
 categories:
   - name: 'Drinks'
     color: 'blue'
@@ -50,3 +51,12 @@ categories:
         price: 8.00
       - name: 'Postcard'
         price: 1.00
+  - name: 'Vouchers'
+    items:
+      - name: 'Free drink'
+        price: 0.00
+        color: 'green'
+      - name: 'Save 1€'
+        price: -1.00
+        color: 'blue'
+        hideInOrders: true
