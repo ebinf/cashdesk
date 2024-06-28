@@ -1,0 +1,52 @@
+title: 'Cashdesk'
+currency:
+  before:
+  after: '€'
+  digits: 2
+categories:
+  - name: 'Drinks'
+    color: 'blue'
+    items:
+      - name: 'Coffee'
+        price: 1.20
+      - name: 'Tea'
+        price: 1.20
+      - name: 'Softdrinks'
+        price: 1.50
+      - name: 'Beer'
+        price: 2.00
+      - name: 'Wine'
+        price: 2.50
+      - name: 'Longdrinks'
+        price: 3.00
+  - name: 'Food'
+    color: 'red'
+    items:
+      - name: 'Falafel'
+        price: 3.50
+      - name: 'Hot Dog'
+        price: 3.50
+      - name: 'Soup'
+        price: 3.00
+      - name: 'French Fries'
+        price: 3.00
+      - name: 'Sandwiches'
+        price: 4.00
+  - name: 'Cake'
+    color: 'green'
+    items:
+      - name: 'Cheesecake'
+        price: 1.50
+      - name: 'Apple Pie'
+        price: 1.50
+      - name: 'Chocolate Cake'
+        price: 1.50
+      - name: 'Lemon Cake'
+        price: 1.50
+  - name: 'Merchandise'
+    color: 'gray'
+    items:
+      - name: 'Calendar'
+        price: 8.00
+      - name: 'Postcard'
+        price: 1.00
