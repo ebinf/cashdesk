@@ -14,7 +14,7 @@
 
 {#if open}
 	<div
-		class="bg-black bg-opacity-40 backdrop-blur-sm absolute bottom-0 left-0 right-0 top-0 items-center justify-center flex"
+		class="bg-black bg-opacity-40 rounded-xl backdrop-blur-sm absolute bottom-0 left-0 right-0 top-0 items-center justify-center flex"
 	>
 		<div class="bg-gray-50 w-4/5 rounded-lg shadow-xl grid grid-cols-2 overflow-hidden">
 			<div class="p-4 flex flex-col">
