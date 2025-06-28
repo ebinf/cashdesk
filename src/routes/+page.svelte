@@ -5,6 +5,9 @@
 	import { readTextFile } from '@tauri-apps/plugin-fs';
 	import { listen, type Event } from '@tauri-apps/api/event';
 	import { parse } from 'yaml';
+	import FormattedCurrency from '$lib/FormattedCurrency.svelte';
+	import { onMount } from 'svelte';
+	import Database from '@tauri-apps/plugin-sql';
 
 	async function fileDialog() {
 		const file = await open({
@@ -13,35 +16,48 @@
 			filters: [{ name: 'YAML', extensions: ['yaml', 'yml'] }],
 			title: 'Konfigurationsdatei auswählen'
 		});
-		readConfigFile(file?.path ?? '');
+		readConfigFile(file ?? '');
 		return file;
 	}
 
-    listen('tauri://drop', (event: Event<any>) => {
-        readConfigFile(event.payload?.paths?.[0]);
-    });
+	listen('tauri://drop', (event: Event<any>) => {
+		readConfigFile(event.payload?.paths?.[0]);
+	});
 
 	async function readConfigFile(path: string) {
 		if (!path) return;
-        if (!path.endsWith('.yaml') && !path.endsWith('.yml')) {
-            alert('Die Datei muss eine YAML-Datei sein.');
-            return;
-        }
+		if (!path.endsWith('.yaml') && !path.endsWith('.yml')) {
+			alert('Die Datei muss eine YAML-Datei sein.');
+			return;
+		}
 		const content = await readTextFile(path);
 		const configFile: App.Config = parse(content);
 		for (const category in configFile.categories) {
 			configFile.categories[category].items = configFile.categories[category].items.map((item) => {
-				item.id = Math.random().toString(36).substr(2, 9);
+				item.id = item.id ? item.id : Math.random().toString(36).substr(2, 9);
+				item?.variants?.forEach((variant) => {
+					variant.idSuffix = variant.idSuffix
+						? variant.idSuffix
+						: Math.random().toString(36).substr(2, 9);
+				});
 				return item;
 			});
 		}
 		config.set(configFile);
 		goto('/pos');
 	}
+
+	const db = Database.get('sqlite:cashdesk.db');
+	let totalIncome: number = 0;
+	onMount(async () => {
+		totalIncome = Object.values(
+			((await db.select('SELECT SUM(totalPrice) FROM orders;')) as any)[0]
+		)[0] as number;
+	});
 </script>
 
-<div class="h-full flex flex-row">
-	<div class="bg-gray-50 w-1/2 h-30 rounded-xl shadow-2xl m-auto p-4">
+<div class="h-full flex flex-col items-center justify-center gap-y-4">
+	<div class="bg-gray-50 w-1/2 h-30 rounded-xl shadow-2xl p-4">
 		<div class="col-span-full">
 			<label for="cover-photo" class="block text-sm font-medium leading-6 text-gray-900"
 				>Konfigurationsdatei</label
@@ -78,5 +94,9 @@
 				</div>
 			</div>
 		</div>
+	</div>
+	<div class="bg-gray-50 w-1/2 h-30 rounded-xl shadow-2xl p-4">
+		<span class="font-semibold">Kassensturz:</span>
+		<span class="text-gray-600">{totalIncome.toFixed(2)}</span>
 	</div>
 </div>

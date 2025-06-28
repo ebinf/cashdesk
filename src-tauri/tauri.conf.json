@@ -28,7 +28,9 @@
 						"dialog:allow-open",
 						"dialog:allow-message",
 						"fs:allow-read-text-file",
-						"event:allow-listen"
+						"core:event:allow-listen",
+						"sql:allow-execute",
+						"sql:allow-select"
 					]
 				}
 			]
@@ -44,6 +46,11 @@
 			"icons/icon.icns",
 			"icons/icon.ico"
 		]
+	},
+	"plugins": {
+		"sql": {
+			"preload": ["sqlite:cashdesk.db"]
+		}
 	},
 	"$schema": "../node_modules/@tauri-apps/cli/schema.json"
 }

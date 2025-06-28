@@ -9,11 +9,15 @@
 	import CancelModal from './CancelModal.svelte';
 	import { config } from '$lib/store';
 	import { goto } from '$app/navigation';
-	import { itemIdToItem } from '$lib/utils';
+	import { getOrderItem, itemIdToItem } from '$lib/utils';
+	import VariantSelectionModal from './VariantSelectionModal.svelte';
+	import Database from '@tauri-apps/plugin-sql';
 
 	if (!$config) {
 		goto('/');
 	}
+
+	const db = Database.get('sqlite:cashdesk.db');
 
 	const data: { config: App.Config } = {
 		config: $config
@@ -25,33 +29,32 @@
 
 	let currentOrder: Map<string, number> = new Map();
 	$: totalPrice = Array.from(currentOrder.entries()).reduce(
-		(acc, [key, value]) =>
-			acc +
-			data.config.categories.flatMap((category) => category.items).find((item) => item.id === key)
-				?.price! *
-				value,
+		(acc, [key, value]) => acc + getOrderItem(data.config, key)!.price * value,
 		0
 	);
 
+	let variantOpenItem: App.Item | null = null;
 	let payModalOpen: boolean = false;
 	let cancelModalOpen: boolean = false;
 
-	const addItem = (item: App.Item) => {
-		if (currentOrder.has(item.id)) {
-			currentOrder.set(item.id, currentOrder.get(item.id)! + 1);
+	const addItem = (item: App.Item, variant?: App.Variant) => {
+		const id = variant ? `${item.id}-${variant.idSuffix}` : item.id;
+		if (currentOrder.has(id)) {
+			currentOrder.set(id, currentOrder.get(id)! + 1);
 		} else {
-			currentOrder.set(item.id, 1);
+			currentOrder.set(id, 1);
 		}
 		currentOrder = new Map(currentOrder);
 	};
 
-	const removeItem = (item: App.Item | undefined) => {
+	const removeItem = (item: App.Item | undefined, variant?: App.Variant) => {
 		if (!item) return;
-		if (!currentOrder.has(item.id)) return;
-		if (currentOrder.get(item.id)! <= 1) {
-			currentOrder.delete(item.id);
+		const id = variant ? `${item.id}-${variant.idSuffix}` : item.id;
+		if (!currentOrder.has(id)) return;
+		if (currentOrder.get(id)! <= 1) {
+			currentOrder.delete(id);
 		} else {
-			currentOrder.set(item.id, currentOrder.get(item.id)! - 1);
+			currentOrder.set(id, currentOrder.get(id)! - 1);
 		}
 		currentOrder = new Map(currentOrder);
 	};
@@ -60,14 +63,35 @@
 		currentOrder = new Map();
 	};
 
-	const submitOrder = () => {
-		orderNumber++;
+	const submitOrder = async () => {
+		const now = new Date();
+		const dbOrder = await db.execute(
+			'INSERT INTO orders (createdAt, totalPrice) VALUES ($1, $2);',
+			[now.toISOString(), totalPrice]
+		);
+		orderNumber = dbOrder.lastInsertId || 1;
+		for (const [id, amount] of currentOrder.entries()) {
+			const item = getOrderItem(data.config, id);
+			if (!item) continue;
+			await db.execute(
+				'INSERT INTO orderItems ("order",itemId,variantId,amount,singlePrice,totalPrice,name) VALUES ($1,$2,$3,$4,$5,$6,$7);',
+				[
+					orderNumber,
+					item.item.id,
+					item.variant?.idSuffix,
+					amount,
+					item.price,
+					amount * item.price,
+					item.variant ? `${item.item.name}, ${item.variant.name}` : item.item.name
+				]
+			);
+		}
 		let relevantItems = Array.from(currentOrder.entries());
 		relevantItems = relevantItems.filter(([id, _]) => !itemIdToItem(data.config, id)?.hideInOrders);
 		if (relevantItems.length > 0) {
 			orderBacklog.push({
 				id: orderNumber,
-				timestamp: Date.now(),
+				timestamp: now.valueOf(),
 				totalPrice: totalPrice,
 				items: Object.fromEntries(relevantItems)
 			});
@@ -104,9 +128,20 @@
 								<ItemButton
 									{item}
 									color={category.color}
-									amount={currentOrder.get(item.id) ?? 0}
+									amount={(currentOrder.get(item.id) ?? 0) +
+										(item.variants?.reduce(
+											(acc, variant) =>
+												(acc += currentOrder.get(`${item.id}-${variant.idSuffix}`) ?? 0),
+											0
+										) ?? 0)}
 									config={data.config}
-									on:click={() => addItem(item)}
+									on:click={() => {
+										if (item.variants && item.variants.length > 0) {
+											variantOpenItem = item;
+											return;
+										}
+										addItem(item);
+									}}
 								/>
 							{/each}
 						</Category>
@@ -121,7 +156,7 @@
 					{totalPrice}
 					config={data.config}
 					on:remove={(event) => {
-						removeItem(event.detail);
+						removeItem(event.detail.item, event.detail?.variant);
 					}}
 				/>
 			</div>
@@ -144,6 +179,16 @@
 				</button>
 			</div>
 		</div>
+		<VariantSelectionModal
+			openItem={variantOpenItem}
+			config={data.config}
+			on:selected={(e) => {
+				if (!variantOpenItem) return;
+				addItem(variantOpenItem, e.detail.variant);
+				variantOpenItem = null;
+			}}
+			on:cancel={() => (variantOpenItem = null)}
+		/>
 		<CancelModal
 			open={cancelModalOpen}
 			on:cancel={() => (cancelModalOpen = false)}
@@ -156,9 +201,9 @@
 			config={data.config}
 			{totalPrice}
 			open={payModalOpen}
-			on:payed={() => {
+			on:payed={async () => {
 				payModalOpen = false;
-				submitOrder();
+				await submitOrder();
 			}}
 			on:cancel={() => (payModalOpen = false)}
 		/>
@@ -168,7 +213,13 @@
 			<OrderPanel
 				{order}
 				config={data.config}
-				on:done={() => (orderBacklog = orderBacklog.filter((iorder) => iorder.id != order.id))}
+				on:done={async () => {
+					orderBacklog = orderBacklog.filter((iorder) => iorder.id != order.id);
+					await db.execute('UPDATE orders SET finishedAt = $1 WHERE id = $2;', [
+						new Date().toISOString(),
+						order.id
+					]);
+				}}
 			/>
 		{/each}
 	</div>

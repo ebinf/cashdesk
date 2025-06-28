@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { itemIdToItem } from '$lib/utils';
+	import { getOrderItem, itemIdToItem } from '$lib/utils';
 	import { createEventDispatcher } from 'svelte';
 
 	export let order: App.Order;
@@ -32,28 +32,33 @@
 		</div>
 	</div>
 	<div class="text-3xl divide-y divide-gray-300 text-gray-800">
-		{#each Object.entries(order.items) as [key, value]}
-			<button
-				class="px-4 py-3 w-full text-left"
-				class:line-through={done.has(key)}
-				on:click={() => {
-					console.log('Clicked!');
-					if (done.has(key)) {
-						done.delete(key);
-					} else {
-						done.add(key);
-					}
-					done = new Set(done);
-				}}
-			>
-				{#if value > 1}
-					<span class="font-bold">{value}</span>
-				{/if}
-				{@html itemIdToItem(config, key)?.name.replace(
-					/\*(\S+)\*/g,
-					'<span class="font-bold">$1</span>'
-				)}
-			</button>
+		{#each Object.entries(order.items).sort((a, b) => a[0].localeCompare(b[0])) as [key, value]}
+			{@const item = getOrderItem(config, key)}
+			{#if item}
+				<button
+					class="px-4 py-3 w-full text-left"
+					class:line-through={done.has(key)}
+					on:click={() => {
+						console.log('Clicked!');
+						if (done.has(key)) {
+							done.delete(key);
+						} else {
+							done.add(key);
+						}
+						done = new Set(done);
+					}}
+				>
+					{#if value > 1}
+						<span class="font-bold">{value}</span>
+					{/if}
+					<span
+						>{@html item.item.name.replace(/\*(\S+)\*/g, '<span class="font-bold">$1</span>')}</span
+					>
+					{#if item.variant}
+						<span class="italic">{item.variant.name}</span>
+					{/if}
+				</button>
+			{/if}
 		{/each}
 	</div>
 	<div class="">

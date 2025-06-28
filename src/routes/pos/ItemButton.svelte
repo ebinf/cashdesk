@@ -19,6 +19,7 @@
 	</p>
 	<p class="text-base pt-2">
 		<FormattedCurrency amount={item.price} {config} />
+		{#if item.variants && item.variants.length > 0}*{/if}
 	</p>
 	{#if amount > 0}
 		<p class="opacity-30 text-9xl font-bold absolute -left-1 -bottom-7 leading-none">

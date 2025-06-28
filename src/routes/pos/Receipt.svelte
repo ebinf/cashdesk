@@ -2,7 +2,7 @@
 	import FormattedCurrency from '$lib/FormattedCurrency.svelte';
 	import { createEventDispatcher } from 'svelte';
 	import ReceiptItemEntry from './ReceiptItemEntry.svelte';
-	import { itemIdToItem } from '$lib/utils';
+	import { getOrderItem, itemIdToItem } from '$lib/utils';
 
 	const dispatch = createEventDispatcher();
 
@@ -14,10 +14,11 @@
 <div class="flex flex-col h-full">
 	<div class="grow divide-y divide-gray-300 overflow-y-auto mb-4">
 		{#each Array.from(currentOrder.entries()) as [key, value]}
+			{@const item = getOrderItem(config, key)}
 			<ReceiptItemEntry
-				item={itemIdToItem(config, key) ?? { id: key, name: 'Unknown', price: 0 }}
+				item={getOrderItem(config, key)}
 				amount={value}
-				on:click={() => dispatch('remove', itemIdToItem(config, key))}
+				on:click={() => dispatch('remove', item)}
 				{config}
 			/>
 		{/each}

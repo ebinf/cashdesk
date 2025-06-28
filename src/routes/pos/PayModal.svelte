@@ -10,6 +10,31 @@
 
 	let payed: number = 0;
 	$: paymentLeft = totalPrice - payed;
+
+	const paymentOptions = [50, 20, 10, 5, 2, 1, 0.5, 0.2, 0.1, 0.05, 0.02, 0.01];
+	let smartPaymentOptions: number[];
+	$: {
+		let smartPaymentOptionsSet = new Set<number>();
+		paymentOptions
+			.filter((option) => option < totalPrice)
+			.forEach((option) => {
+				let priceDifference = totalPrice * 100 - option * 100;
+				let current = option * 100;
+				while (priceDifference > 0) {
+					priceDifference -= option * 100;
+					current += option * 100;
+				}
+				smartPaymentOptionsSet.add(current);
+			});
+		paymentOptions.forEach((option) => {
+			smartPaymentOptionsSet.delete(option * 100);
+		}); // Remove exact payment options to avoid confusion
+		smartPaymentOptionsSet.add(totalPrice * 100); // Always include the total price as an option
+		smartPaymentOptionsSet.delete(0); // Remove zero to avoid confusion
+		smartPaymentOptions = Array.from(smartPaymentOptionsSet)
+			.sort((a, b) => a - b)
+			.map((value) => value / 100);
+	}
 </script>
 
 {#if open}
@@ -17,7 +42,7 @@
 		class="bg-black bg-opacity-40 rounded-xl backdrop-blur-sm absolute bottom-0 left-0 right-0 top-0 items-center justify-center flex"
 	>
 		<div class="bg-gray-50 w-4/5 rounded-lg shadow-xl grid grid-cols-2 overflow-hidden">
-			<div class="p-4 flex flex-col">
+			<div class="p-4 flex gap-y-4 flex-col">
 				<div class="grow">
 					<div class="grid grid-cols-2 gap-4">
 						{#each [50, 20, 10, 5] as amount}
@@ -42,7 +67,18 @@
 						{/each}
 					</div>
 				</div>
-				<div class="mt-4">
+				<div class="flex flex-row flex-wrap gap-3">
+					{#each smartPaymentOptions as smartPaymentOption}
+						<button
+							on:click={() => (payed = smartPaymentOption)}
+							type="button"
+							class="rounded-md bg-gray-600 px-3.5 py-4 text-base font-semibold text-white shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600"
+						>
+							<FormattedCurrency amount={smartPaymentOption} {config} />
+						</button>
+					{/each}
+				</div>
+				<div>
 					<button
 						on:click={() => (payed = 0)}
 						type="button"

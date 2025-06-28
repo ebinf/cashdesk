@@ -8,6 +8,17 @@ declare global {
 		// interface PageState {}
 		// interface Platform {}
 
+		type Color =
+			| 'red'
+			| 'green'
+			| 'blue'
+			| 'yellow'
+			| 'purple'
+			| 'orange'
+			| 'pink'
+			| 'teal'
+			| 'rose';
+
 		interface Order {
 			id: number;
 			timestamp: number;
@@ -17,26 +28,25 @@ declare global {
 			totalPrice: number;
 		}
 
+		interface Variant {
+			name: string;
+			priceDifference?: number;
+			idSuffix: string;
+			color?: Color;
+		}
+
 		interface Item {
 			name: string;
 			price: number;
 			id: string;
-			color:
-				| 'red'
-				| 'green'
-				| 'blue'
-				| 'yellow'
-				| 'purple'
-				| 'orange'
-				| 'pink'
-				| 'teal'
-				| undefined;
+			color?: Color;
 			hideInOrders: boolean?;
+			variants?: Variant[];
 		}
 
 		interface Category {
 			name: string;
-			color: 'red' | 'green' | 'blue' | 'yellow' | 'purple' | 'orange' | 'pink' | 'teal' | 'rose';
+			color: Color;
 			items: Item[];
 		}
 

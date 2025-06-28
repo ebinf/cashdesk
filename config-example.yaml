@@ -1,4 +1,5 @@
 title: 'Cashdesk'
+id: 'cashdesk'
 currency:
   before:
   after: '€'
@@ -27,10 +28,24 @@ categories:
         price: 3.50
       - name: 'Hot Dog'
         price: 3.50
+        variants:
+          - name: 'with Ketchup'
+            color: 'red'
+          - name: 'with Mayo'
+            color: 'yellow'
       - name: 'Soup'
         price: 3.00
       - name: 'French Fries'
         price: 3.00
+        variants:
+          - name: 'plain'
+            color: 'gray'
+            priceDifference: -0.20
+          - name: 'with Ketchup'
+            color: 'red'
+          - name: 'with Mayo'
+            priceDifference: 0.20
+            color: 'yellow'
       - name: 'Sandwiches'
         price: 4.00
   - name: 'Cake'
