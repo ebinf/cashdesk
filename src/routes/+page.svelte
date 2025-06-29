@@ -95,8 +95,10 @@
 			</div>
 		</div>
 	</div>
-	<div class="bg-gray-50 w-1/2 h-30 rounded-xl shadow-2xl p-4">
-		<span class="font-semibold">Kassensturz:</span>
-		<span class="text-gray-600">{totalIncome.toFixed(2)}</span>
-	</div>
+	{#if totalIncome !== null && totalIncome !== undefined}
+		<div class="bg-gray-50 w-1/2 h-30 rounded-xl shadow-2xl p-4">
+			<span class="font-semibold">Kassensturz:</span>
+			<span class="text-gray-600">{totalIncome.toFixed(2)}</span>
+		</div>
+	{/if}
 </div>
