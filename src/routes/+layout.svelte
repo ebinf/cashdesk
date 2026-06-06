@@ -1,5 +1,6 @@
-<script>
-	import '../app.css';
+<script lang="ts">
+	import './layout.css';
+	import favicon from '$lib/assets/favicon.svg';
 
 	import '@fontsource/firago/100.css';
 	import '@fontsource/firago/100-italic.css';
@@ -17,6 +18,9 @@
 	import '@fontsource/firago/700-italic.css';
 	import '@fontsource/firago/800.css';
 	import '@fontsource/firago/800-italic.css';
+
+	let { children } = $props();
 </script>
 
-<slot />
+<svelte:head><link rel="icon" href={favicon} /></svelte:head>
+{@render children()}
