@@ -7,47 +7,6 @@ declare global {
 		// interface PageData {}
 		// interface PageState {}
 		// interface Platform {}
-		type Color =
-			| 'red'
-			| 'green'
-			| 'blue'
-			| 'yellow'
-			| 'purple'
-			| 'orange'
-			| 'pink'
-			| 'teal'
-			| 'rose';
-
-		interface Order {
-			id: number;
-			timestamp: number;
-			items: {
-				[id: string]: number;
-			};
-			totalPrice: number;
-		}
-
-		interface Variant {
-			name: string;
-			priceDifference?: number;
-			idSuffix: string;
-			color?: Color;
-		}
-
-		interface Item {
-			name: string;
-			price: number;
-			id: string;
-			color?: Color;
-			hideInOrders: boolean?;
-			variants?: Variant[];
-		}
-
-		interface Category {
-			name: string;
-			color: Color;
-			items: Item[];
-		}
 
 		interface Config {
 			title: string?;
@@ -57,7 +16,6 @@ declare global {
 				after: string;
 				digits: number;
 			};
-			categories: Category[];
 		}
 	}
 }
