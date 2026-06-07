@@ -1,7 +1,8 @@
 import { client } from '$lib/server/database';
-import type { PageServerLoad } from './$types';
+import type { LayoutServerLoad } from './$types';
+import fs from 'node:fs/promises';
 
-export const load: PageServerLoad = async ({ locals }) => {
+export const load: LayoutServerLoad = async ({ locals }) => {
 	const categories = await client.category.findMany({
 		orderBy: {
 			order: 'asc'
@@ -22,15 +23,7 @@ export const load: PageServerLoad = async ({ locals }) => {
 		}
 	});
 
-	const config: App.Config = {
-		title: 'Test',
-		itemsPerRow: 3,
-		currency: {
-			before: '',
-			after: '€',
-			digits: 2
-		}
-	};
+	const config: App.Config = JSON.parse(await fs.readFile('config.json', 'utf-8'));
 
 	return { categories, config };
 };

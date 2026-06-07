@@ -20,6 +20,7 @@ enum Color {
   pink
   teal
   rose
+  taupe
 }
 
 model Category {
@@ -57,6 +58,12 @@ model Variant {
   isArchived      Boolean     @default(false)
 }
 
+model FloatingOrder {
+  id            Int         @id @default(autoincrement())
+  lastKeepAlive DateTime    @default(now())
+  items         OrderItem[]
+}
+
 model Order {
   id         Int         @id @default(autoincrement())
   createdAt  DateTime    @default(now())
@@ -66,13 +73,15 @@ model Order {
 }
 
 model OrderItem {
-  id        Int      @id @default(autoincrement())
-  order     Order    @relation(fields: [orderId], references: [id])
-  orderId   Int
-  product   Product  @relation(fields: [productId], references: [id])
-  productId Int
-  variant   Variant? @relation(fields: [variantId], references: [id])
-  variantId Int?
-  amount    Int
-  done      Boolean  @default(false)
+  id              Int            @id @default(autoincrement())
+  floatingOrder   FloatingOrder? @relation(fields: [floatingOrderId], references: [id])
+  floatingOrderId Int?
+  order           Order?         @relation(fields: [orderId], references: [id])
+  orderId         Int?
+  product         Product        @relation(fields: [productId], references: [id])
+  productId       Int
+  variant         Variant?       @relation(fields: [variantId], references: [id])
+  variantId       Int?
+  amount          Int
+  done            Boolean        @default(false)
 }

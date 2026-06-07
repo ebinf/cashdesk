@@ -53,12 +53,12 @@
 		</button>
 	</dt>
 	<dd class="mx-2 mt-2" class:hidden={!open}>
-		<p
+		<div
 			class="grid xl:grid-cols-{items(0)} lg:grid-cols-{items(1)} md:grid-cols-{items(
 				2
 			)} sm:grid-cols-{items(3)} grid-cols-{items(4)} gap-2"
 		>
 			{@render children()}
-		</p>
+		</div>
 	</dd>
 </div>

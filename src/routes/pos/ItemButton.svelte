@@ -21,7 +21,7 @@
 <button
 	{onclick}
 	type="button"
-	class="relative aspect-square min-h-20 overflow-hidden rounded-md px-3.5 py-2.5 text-white shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600"
+	class="relative aspect-square min-h-20 shrink-0 overflow-hidden rounded-md px-3.5 py-2.5 text-white shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600"
 	class:bg-red-600={(item.color ?? color) === Color.red}
 	class:bg-green-600={(item.color ?? color) === Color.green}
 	class:bg-blue-600={(item.color ?? color) === Color.blue}
@@ -31,6 +31,7 @@
 	class:bg-pink-600={(item.color ?? color) === Color.pink}
 	class:bg-teal-600={(item.color ?? color) === Color.teal}
 	class:bg-rose-600={(item.color ?? color) === Color.rose}
+	class:bg-taupe-600={(item.color ?? color) === Color.taupe}
 >
 	<p class="overflow-hidden text-xl leading-tight font-semibold text-ellipsis">
 		{@html item.name.replace(/\*(\S+)\*/g, '<span class="font-extrabold italic">$1</span>')}

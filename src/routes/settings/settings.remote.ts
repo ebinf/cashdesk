@@ -1,0 +1,631 @@
+import * as v from 'valibot';
+import { command } from '$app/server';
+import { client } from '$lib/server/database';
+import { Color } from '$lib/prisma/enums';
+import events from '$lib/server/events';
+import fs from 'node:fs/promises';
+
+export const editSettings = command(
+	v.object({
+		title: v.string(),
+		itemsPerRow: v.pipe(v.number(), v.minValue(1), v.maxValue(9)),
+		currency: v.object({
+			before: v.string(),
+			after: v.string(),
+			digits: v.pipe(v.number(), v.minValue(0), v.maxValue(20))
+		})
+	}),
+	async (data) => {
+		await fs.writeFile('config.json', JSON.stringify(data, null, 2));
+		events.emit('update', 'catalogue');
+		return true;
+	}
+);
+export const addCategory = command(
+	v.object({
+		name: v.string(),
+		color: v.enum(Color)
+	}),
+	async (data) => {
+		const largestOrder = await client.category.findFirst({
+			orderBy: {
+				order: 'desc'
+			},
+			where: {
+				isArchived: false
+			},
+			select: {
+				order: true
+			}
+		});
+		await client.category.create({
+			data: {
+				name: data.name,
+				color: data.color,
+				order: (largestOrder?.order ?? 0) + 1
+			}
+		});
+		events.emit('update', 'catalogue');
+		return true;
+	}
+);
+
+export const editCategory = command(
+	v.object({
+		id: v.number(),
+		name: v.string(),
+		color: v.enum(Color)
+	}),
+	async (data) => {
+		await client.category.update({
+			where: {
+				id: data.id
+			},
+			data: {
+				name: data.name,
+				color: data.color
+			}
+		});
+		events.emit('update', 'catalogue');
+		return true;
+	}
+);
+
+export const moveCategoryUp = command(v.number(), async (id) => {
+	const category = await client.category.findUnique({
+		where: {
+			id: id
+		}
+	});
+	if (!category) return;
+	const previousCategory = await client.category.findFirst({
+		where: {
+			order: {
+				lt: category.order
+			},
+			isArchived: false
+		},
+		orderBy: {
+			order: 'desc'
+		}
+	});
+	if (!previousCategory) return;
+	await client.$transaction([
+		client.category.update({
+			where: {
+				id: category.id
+			},
+			data: {
+				order: previousCategory.order
+			}
+		}),
+		client.category.update({
+			where: {
+				id: previousCategory.id
+			},
+			data: {
+				order: category.order
+			}
+		})
+	]);
+	events.emit('update', 'catalogue');
+});
+
+export const moveCategoryDown = command(v.number(), async (id) => {
+	const category = await client.category.findUnique({
+		where: {
+			id: id
+		}
+	});
+	if (!category) return;
+	const nextCategory = await client.category.findFirst({
+		where: {
+			order: {
+				gt: category.order
+			},
+			isArchived: false
+		},
+		orderBy: {
+			order: 'asc'
+		}
+	});
+	if (!nextCategory) return;
+	await client.$transaction([
+		client.category.update({
+			where: {
+				id: category.id
+			},
+			data: {
+				order: nextCategory.order
+			}
+		}),
+		client.category.update({
+			where: {
+				id: nextCategory.id
+			},
+			data: {
+				order: category.order
+			}
+		})
+	]);
+	events.emit('update', 'catalogue');
+});
+
+export const deleteCategory = command(v.number(), async (id) => {
+	const category = await client.category.findUnique({
+		where: {
+			id: id,
+			products: {
+				none: {
+					isArchived: false
+				}
+			}
+		}
+	});
+	if (!category) return;
+	await client.category.update({
+		where: {
+			id: id
+		},
+		data: {
+			isArchived: true
+		}
+	});
+	events.emit('update', 'catalogue');
+});
+
+export const restoreCategory = command(v.number(), async (id) => {
+	const category = await client.category.findUnique({
+		where: {
+			id: id
+		}
+	});
+	if (!category) return;
+	await client.category.update({
+		where: {
+			id: id
+		},
+		data: {
+			isArchived: false
+		}
+	});
+	events.emit('update', 'catalogue');
+});
+
+export const addProduct = command(
+	v.object({
+		name: v.string(),
+		color: v.optional(v.enum(Color)),
+		price: v.number(),
+		categoryId: v.number()
+	}),
+	async (data) => {
+		const largestOrder = await client.product.findFirst({
+			where: {
+				categoryId: data.categoryId,
+				isArchived: false
+			},
+			orderBy: {
+				order: 'desc'
+			},
+			select: {
+				order: true
+			}
+		});
+		await client.product.create({
+			data: {
+				name: data.name,
+				color: data.color ?? null,
+				price: data.price,
+				categoryId: data.categoryId,
+				order: (largestOrder?.order ?? 0) + 1
+			}
+		});
+		events.emit('update', 'catalogue');
+		return true;
+	}
+);
+
+export const editProduct = command(
+	v.object({
+		id: v.number(),
+		name: v.string(),
+		color: v.optional(v.enum(Color)),
+		price: v.number(),
+		categoryId: v.number()
+	}),
+	async (data) => {
+		const product = await client.product.findUnique({
+			where: {
+				id: data.id
+			},
+			include: {
+				variants: {
+					where: {
+						isArchived: false
+					}
+				},
+				_count: {
+					select: {
+						orderItems: true
+					}
+				}
+			}
+		});
+		if (!product) return false;
+		if (
+			(product.name === data.name && product.price === data.price) ||
+			product._count.orderItems === 0
+		) {
+			await client.product.update({
+				where: {
+					id: data.id
+				},
+				data: {
+					name: data.name,
+					color: data.color ?? null,
+					price: data.price,
+					categoryId: data.categoryId
+				}
+			});
+		} else {
+			await client.product.create({
+				data: {
+					name: data.name,
+					color: data.color ?? null,
+					price: data.price,
+					categoryId: data.categoryId,
+					order: product.order,
+					variants: {
+						create: product.variants.map((v) => ({
+							name: v.name,
+							priceDifference: v.priceDifference,
+							color: v.color,
+							order: v.order
+						}))
+					}
+				}
+			});
+			await client.product.update({
+				where: {
+					id: data.id
+				},
+				data: {
+					isArchived: true
+				}
+			});
+		}
+		events.emit('update', 'catalogue');
+		return true;
+	}
+);
+
+export const moveProductLeft = command(v.number(), async (id) => {
+	const product = await client.product.findUnique({
+		where: {
+			id: id
+		}
+	});
+	if (!product) return;
+	const previousProduct = await client.product.findFirst({
+		where: {
+			order: {
+				lt: product.order
+			},
+			categoryId: product.categoryId,
+			isArchived: false
+		},
+		orderBy: {
+			order: 'desc'
+		}
+	});
+	if (!previousProduct) return;
+	await client.$transaction([
+		client.product.update({
+			where: {
+				id: product.id
+			},
+			data: {
+				order: previousProduct.order
+			}
+		}),
+		client.product.update({
+			where: {
+				id: previousProduct.id
+			},
+			data: {
+				order: product.order
+			}
+		})
+	]);
+	events.emit('update', 'catalogue');
+});
+
+export const moveProductRight = command(v.number(), async (id) => {
+	const product = await client.product.findUnique({
+		where: {
+			id: id
+		}
+	});
+	if (!product) return;
+	const nextProduct = await client.product.findFirst({
+		where: {
+			order: {
+				gt: product.order
+			},
+			categoryId: product.categoryId,
+			isArchived: false
+		},
+		orderBy: {
+			order: 'asc'
+		}
+	});
+	if (!nextProduct) return;
+	await client.$transaction([
+		client.product.update({
+			where: {
+				id: product.id
+			},
+			data: {
+				order: nextProduct.order
+			}
+		}),
+		client.product.update({
+			where: {
+				id: nextProduct.id
+			},
+			data: {
+				order: product.order
+			}
+		})
+	]);
+	events.emit('update', 'catalogue');
+});
+
+export const deleteProduct = command(v.number(), async (id) => {
+	const product = await client.product.findUnique({
+		where: {
+			id: id
+		}
+	});
+	if (!product) return;
+	await client.product.update({
+		where: {
+			id: id
+		},
+		data: {
+			isArchived: true
+		}
+	});
+	events.emit('update', 'catalogue');
+});
+
+export const restoreProduct = command(v.number(), async (id) => {
+	const product = await client.product.findUnique({
+		where: {
+			id: id
+		}
+	});
+	if (!product) return;
+	await client.product.update({
+		where: {
+			id: id
+		},
+		data: {
+			isArchived: false
+		}
+	});
+	events.emit('update', 'catalogue');
+});
+
+export const addVariant = command(
+	v.object({
+		name: v.string(),
+		color: v.optional(v.enum(Color)),
+		priceDifference: v.number(),
+		productId: v.number()
+	}),
+	async (data) => {
+		const largestOrder = await client.variant.findFirst({
+			where: {
+				productId: data.productId,
+				isArchived: false
+			},
+			orderBy: {
+				order: 'desc'
+			},
+			select: {
+				order: true
+			}
+		});
+		await client.variant.create({
+			data: {
+				name: data.name,
+				color: data.color ?? null,
+				priceDifference: data.priceDifference,
+				productId: data.productId,
+				order: (largestOrder?.order ?? 0) + 1
+			}
+		});
+		events.emit('update', 'catalogue');
+		return true;
+	}
+);
+
+export const moveVariantLeft = command(v.number(), async (id) => {
+	const variant = await client.variant.findUnique({
+		where: {
+			id: id
+		}
+	});
+	if (!variant) return;
+	const previousVariant = await client.variant.findFirst({
+		where: {
+			order: {
+				lt: variant.order
+			},
+			productId: variant.productId,
+			isArchived: false
+		},
+		orderBy: {
+			order: 'desc'
+		}
+	});
+	if (!previousVariant) return;
+	await client.$transaction([
+		client.variant.update({
+			where: {
+				id: variant.id
+			},
+			data: {
+				order: previousVariant.order
+			}
+		}),
+		client.variant.update({
+			where: {
+				id: previousVariant.id
+			},
+			data: {
+				order: variant.order
+			}
+		})
+	]);
+	events.emit('update', 'catalogue');
+});
+
+export const editVariant = command(
+	v.object({
+		id: v.number(),
+		name: v.string(),
+		color: v.optional(v.enum(Color)),
+		priceDifference: v.number(),
+		productId: v.number()
+	}),
+	async (data) => {
+		const variant = await client.variant.findUnique({
+			where: {
+				id: data.id
+			},
+			include: {
+				_count: {
+					select: {
+						orderItems: true
+					}
+				}
+			}
+		});
+		if (!variant) return false;
+		if (
+			(variant.name === data.name && variant.priceDifference === data.priceDifference) ||
+			variant._count.orderItems === 0
+		) {
+			await client.variant.update({
+				where: {
+					id: data.id
+				},
+				data: {
+					name: data.name,
+					color: data.color ?? null,
+					priceDifference: data.priceDifference
+				}
+			});
+		} else {
+			await client.variant.create({
+				data: {
+					name: data.name,
+					color: data.color ?? null,
+					priceDifference: data.priceDifference,
+					productId: data.productId,
+					order: variant.order
+				}
+			});
+			await client.variant.update({
+				where: {
+					id: data.id
+				},
+				data: {
+					isArchived: true
+				}
+			});
+		}
+		events.emit('update', 'catalogue');
+		return true;
+	}
+);
+
+export const moveVariantRight = command(v.number(), async (id) => {
+	const variant = await client.variant.findUnique({
+		where: {
+			id: id
+		}
+	});
+	if (!variant) return;
+	const nextVariant = await client.variant.findFirst({
+		where: {
+			order: {
+				gt: variant.order
+			},
+			productId: variant.productId,
+			isArchived: false
+		},
+		orderBy: {
+			order: 'asc'
+		}
+	});
+	if (!nextVariant) return;
+	await client.$transaction([
+		client.variant.update({
+			where: {
+				id: variant.id
+			},
+			data: {
+				order: nextVariant.order
+			}
+		}),
+		client.variant.update({
+			where: {
+				id: nextVariant.id
+			},
+			data: {
+				order: variant.order
+			}
+		})
+	]);
+	events.emit('update', 'catalogue');
+});
+
+export const deleteVariant = command(v.number(), async (id) => {
+	const variant = await client.variant.findUnique({
+		where: {
+			id: id
+		}
+	});
+	if (!variant) return;
+	await client.variant.update({
+		where: {
+			id: id
+		},
+		data: {
+			isArchived: true
+		}
+	});
+	events.emit('update', 'catalogue');
+});
+
+export const restoreVariant = command(v.number(), async (id) => {
+	const variant = await client.variant.findUnique({
+		where: {
+			id: id
+		}
+	});
+	if (!variant) return;
+	await client.variant.update({
+		where: {
+			id: id
+		},
+		data: {
+			isArchived: false
+		}
+	});
+	events.emit('update', 'catalogue');
+});

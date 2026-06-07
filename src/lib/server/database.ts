@@ -8,4 +8,8 @@ const connectionString = env.DATABASE_URL ?? 'file:./dev.db';
 const adapter = new PrismaBetterSqlite3({ url: connectionString });
 const client = new PrismaClient({ adapter });
 
+await client.floatingOrder.deleteMany({
+	where: {}
+});
+
 export { client };

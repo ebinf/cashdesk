@@ -19,7 +19,7 @@
 	>
 		<div class="w-4/5 max-w-2xl overflow-hidden rounded-lg bg-gray-50 p-4 shadow-xl">
 			<div class="mb-4 flex flex-row justify-start gap-4">
-				{#each openItem.variants as variant}
+				{#each openItem.variants.filter((v) => !v.isArchived) as variant (variant.id)}
 					{@const color: Color = variant.color ?? openItem.color ?? Color.red}
 					<button
 						onclick={() => {
@@ -36,6 +36,7 @@
 						class:bg-pink-600={color === Color.pink}
 						class:bg-teal-600={color === Color.teal}
 						class:bg-rose-600={color === Color.rose}
+						class:bg-taupe-600={color === Color.taupe}
 					>
 						<p class="overflow-hidden text-xl leading-tight font-semibold text-ellipsis">
 							{@html variant.name.replace(

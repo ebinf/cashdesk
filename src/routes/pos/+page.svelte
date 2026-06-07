@@ -10,8 +10,23 @@
 	import { getOrderItem } from '$lib/utils';
 	import Receipt from './Receipt.svelte';
 	import PayModal from './PayModal.svelte';
-	import { getActiveOrders, submitOrder } from './commands.remote';
-	import OrderPanel from './OrderPanel.svelte';
+	import {
+		addItemToFloatingOrder,
+		clearFloatingOrder,
+		getActiveOrders,
+		getFloatingOrders,
+		keepAliveFloatingOrder,
+		newFloatingOrder,
+		removeItemFromFloatingOrder,
+		submitFloatingOrder,
+		submitOrder,
+		updateItemAmountInFloatingOrder
+	} from '../commands.remote';
+	import OrderPanel from '../OrderPanel.svelte';
+	import FloatingOrderPanel from '../FloatingOrderPanel.svelte';
+	import { onNavigate } from '$app/navigation';
+	import { browser } from '$app/env';
+	import SettingsModal from './SettingsModal.svelte';
 
 	interface Props {
 		data: PageData;
@@ -19,10 +34,18 @@
 
 	let { data }: Props = $props();
 
-	let variantOpenItem: Prisma.ProductGetPayload<{ include: { variants: true } }> | null =
-		$state(null);
+	let showSettings: boolean = $state(false);
+	let variantOpenItemId: number | null = $state(null);
+	let variantOpenItem: Prisma.ProductGetPayload<{ include: { variants: true } }> | null = $derived(
+		variantOpenItemId
+			? (data.categories.flatMap((c) => c.products).find((p) => p.id === variantOpenItemId) ?? null)
+			: null
+	);
 	let payModalOpen: boolean = $state(false);
 	let cancelModalOpen: boolean = $state(false);
+
+	let floatingOrderId: number | null = null;
+	let floatingOrderInterval: NodeJS.Timeout | null = null;
 
 	let currentOrder: Map<string, number> = $state(new Map());
 	let totalPrice = $derived(
@@ -36,30 +59,69 @@
 		}, 0)
 	);
 
-	const clearOrder = () => {
+	const clearOrder = async () => {
 		currentOrder = new Map();
+		if (floatingOrderId) {
+			await clearFloatingOrder(floatingOrderId);
+			floatingOrderId = null;
+			if (floatingOrderInterval) {
+				clearInterval(floatingOrderInterval);
+				floatingOrderInterval = null;
+			}
+		}
 	};
 
-	const addItem = (product: Product, variant?: Variant) => {
+	const addItem = async (product: Product, variant?: Variant) => {
+		if (!floatingOrderId) {
+			floatingOrderId = await newFloatingOrder();
+			floatingOrderInterval = setInterval(() => {
+				if (floatingOrderId) {
+					keepAliveFloatingOrder(floatingOrderId);
+				}
+			}, 10 * 1000);
+		}
 		const index = `${product.id}${variant ? `_${variant.id}` : ''}`;
-		console.log('Adding item', index);
-		console.log('Current order before adding', Array.from(currentOrder.keys()));
 		if (currentOrder.has(index)) {
 			currentOrder.set(index, currentOrder.get(index)! + 1);
+			await updateItemAmountInFloatingOrder({
+				orderId: floatingOrderId,
+				productId: product.id,
+				variantId: variant?.id,
+				amount: currentOrder.get(index)!
+			});
 		} else {
 			currentOrder.set(index, 1);
+			await addItemToFloatingOrder({
+				orderId: floatingOrderId,
+				productId: product.id,
+				variantId: variant?.id
+			});
 		}
 		currentOrder = new Map(currentOrder);
 	};
 
-	const removeItem = (product: number, variant?: number) => {
+	const removeItem = async (product: number, variant?: number) => {
 		const index = `${product}${variant ? `_${variant}` : ''}`;
-		console.log('Removing item', index);
 		if (!currentOrder.has(index)) return;
 		if (currentOrder.get(index)! <= 1) {
 			currentOrder.delete(index);
+			if (floatingOrderId) {
+				await removeItemFromFloatingOrder({
+					orderId: floatingOrderId,
+					productId: product,
+					variantId: variant
+				});
+			}
 		} else {
 			currentOrder.set(index, currentOrder.get(index)! - 1);
+			if (floatingOrderId) {
+				await updateItemAmountInFloatingOrder({
+					orderId: floatingOrderId,
+					productId: product,
+					variantId: variant,
+					amount: currentOrder.get(index)!
+				});
+			}
 		}
 		currentOrder = new Map(currentOrder);
 	};
@@ -71,14 +133,32 @@
 		}, 1000);
 		return () => clearInterval(interval);
 	});
+
+	onNavigate(async () => {
+		if (floatingOrderId) {
+			await clearFloatingOrder(floatingOrderId);
+			floatingOrderId = null;
+		}
+	});
+
+	if (browser) {
+		window.onbeforeunload = async (event) => {
+			if (floatingOrderId) {
+				await clearFloatingOrder(floatingOrderId);
+				floatingOrderId = null;
+			}
+		};
+	}
 </script>
 
 <div class="flex h-full flex-row gap-10">
 	<div class="relative flex w-3/4 flex-row rounded-xl bg-gray-50 shadow-2xl">
 		<div class="flex w-3/4 flex-col">
 			<div class="flex flex-row border-b border-gray-200 p-4 text-2xl font-semibold text-gray-800">
-				<p class="grow">
-					<img src="/logo.svg" alt="Logo" class="inline h-8" />
+				<p class="flex grow items-center gap-2">
+					<button onclick={() => (showSettings = true)}>
+						<img src="/logo.svg" alt="Logo" class="inline h-8" />
+					</button>
 					{data.config.title ?? 'Kasse'}
 				</p>
 				<div class="text-right font-normal">{now.toLocaleTimeString('de-DE')}</div>
@@ -101,7 +181,7 @@
 									config={data.config}
 									onclick={() => {
 										if (item.variants.length > 0) {
-											variantOpenItem = item;
+											variantOpenItemId = item.id;
 											return;
 										}
 										addItem(item);
@@ -145,15 +225,16 @@
 			</div>
 		</div>
 
+		<SettingsModal config={data.config} bind:open={showSettings} />
 		<VariantSelectionModal
 			openItem={variantOpenItem}
 			config={data.config}
 			onselected={(variant: Variant) => {
 				if (!variantOpenItem) return;
 				addItem(variantOpenItem, variant);
-				variantOpenItem = null;
+				variantOpenItemId = null;
 			}}
-			oncancel={() => (variantOpenItem = null)}
+			oncancel={() => (variantOpenItemId = null)}
 		/>
 		<CancelModal
 			open={cancelModalOpen}
@@ -168,34 +249,37 @@
 			{totalPrice}
 			open={payModalOpen}
 			onpayed={async () => {
-				payModalOpen = false;
-				if (
+				if (floatingOrderId) {
+					await submitFloatingOrder({
+						floatingOrderId: floatingOrderId,
+						items: Array.from(currentOrder.entries()).map(([key, amount]) => {
+							const [productId, variantId] = key.split('_').map(Number);
+							return { productId, variantId, amount };
+						}),
+						total: totalPrice
+					});
+				} else {
 					await submitOrder({
 						items: Array.from(currentOrder.entries()).map(([key, amount]) => {
 							const [productId, variantId] = key.split('_').map(Number);
 							return { productId, variantId, amount };
 						}),
 						total: totalPrice
-					})
-				) {
-					clearOrder();
+					});
 				}
+				floatingOrderId = null;
+				currentOrder = new Map();
+				payModalOpen = false;
 			}}
 			oncancel={() => (payModalOpen = false)}
 		/>
 	</div>
 	<div class="-mt-5 -mr-5 -mb-5 w-1/3 space-y-4 overflow-y-auto p-5">
 		{#each await getActiveOrders() as order (order.id)}
-			<OrderPanel
-				{order}
-				ondone={async () => {
-					// orderBacklog = orderBacklog.filter((iorder) => iorder.id != order.id);
-					// await db.execute('UPDATE orders SET finishedAt = $1 WHERE id = $2;', [
-					// 	new Date().toISOString(),
-					// 	order.id
-					// ]);
-				}}
-			/>
+			<OrderPanel {order} />
+		{/each}
+		{#each await getFloatingOrders() as order (order.id)}
+			<FloatingOrderPanel {order} />
 		{/each}
 	</div>
 </div>

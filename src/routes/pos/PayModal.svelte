@@ -13,6 +13,7 @@
 
 	let payed: number = $state(0);
 	let paymentLeft: number = $derived(totalPrice - payed);
+	let submitting: boolean = $state(false);
 
 	const paymentOptions = [50, 20, 10, 5, 2, 1, 0.5, 0.2, 0.1, 0.05, 0.02, 0.01];
 	let smartPaymentOptions: number[] = $state([]);
@@ -45,12 +46,13 @@
 		class="absolute top-0 right-0 bottom-0 left-0 flex items-center justify-center rounded-xl bg-black/40 backdrop-blur-sm"
 	>
 		<div class="grid w-4/5 grid-cols-2 overflow-hidden rounded-lg bg-gray-50 shadow-xl">
-			<div class="flex flex-col gap-y-4 p-4">
+			<div class="flex flex-col gap-y-4 p-4" class:blur-xs={submitting}>
 				<div class="grow">
 					<div class="grid grid-cols-2 gap-4">
 						{#each [50, 20, 10, 5] as amount}
 							<button
 								onclick={() => (payed += amount * 100)}
+								disabled={submitting}
 								type="button"
 								class="aspect-2/1 overflow-hidden shadow-xl"
 							>
@@ -69,6 +71,7 @@
 						{#each [2, 1, 0.5, 0.2, 0.1, 0.05, 0.02, 0.01] as amount}
 							<button
 								onclick={() => (payed += amount * 100)}
+								disabled={submitting}
 								type="button"
 								class="aspect-square overflow-hidden rounded-full shadow-xl"
 							>
@@ -88,6 +91,7 @@
 					{#each smartPaymentOptions as smartPaymentOption}
 						<button
 							onclick={() => (payed = smartPaymentOption)}
+							disabled={submitting}
 							type="button"
 							class="rounded-md bg-gray-600 px-3.5 py-4 text-base font-semibold text-white shadow-sm first:bg-green-700 first:px-6 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600"
 						>
@@ -98,6 +102,7 @@
 				<div>
 					<button
 						onclick={() => (payed = 0)}
+						disabled={submitting}
 						type="button"
 						class="w-full rounded-md border border-gray-300 bg-gray-50 px-3.5 py-4 text-base font-semibold text-gray-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600"
 					>
@@ -127,20 +132,46 @@
 				<div class="flex flex-col gap-4">
 					<button
 						type="button"
-						disabled={Math.round(paymentLeft * 100) > 0}
-						onclick={() => {
+						disabled={Math.round(paymentLeft * 100) > 0 || submitting}
+						onclick={async () => {
+							submitting = true;
+							await onpayed();
 							open = false;
 							payed = 0;
-							onpayed();
+							submitting = false;
 						}}
 						class="w-full rounded-md bg-gray-600 px-3.5 py-10 text-2xl font-semibold text-white shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600 disabled:cursor-not-allowed disabled:bg-gray-400"
 					>
-						Bestellung abschließen
+						{#if submitting}
+							<svg
+								class="mx-auto my-0.5 size-7 animate-spin text-white"
+								xmlns="http://www.w3.org/2000/svg"
+								fill="none"
+								viewBox="0 0 24 24"
+							>
+								<circle
+									class="opacity-25"
+									cx="12"
+									cy="12"
+									r="10"
+									stroke="currentColor"
+									stroke-width="4"
+								></circle>
+								<path
+									class="opacity-75"
+									fill="currentColor"
+									d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+								></path>
+							</svg>
+						{:else}
+							Bestellung abschließen
+						{/if}
 					</button>
 					<button
 						onclick={oncancel}
+						disabled={submitting}
 						type="button"
-						class="w-full rounded-md border border-gray-300 bg-gray-50 px-3.5 py-4 text-base font-semibold text-gray-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600"
+						class="w-full rounded-md border border-gray-300 bg-gray-50 px-3.5 py-4 text-base font-semibold text-gray-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600 disabled:cursor-not-allowed disabled:bg-gray-200"
 					>
 						Abbrechen
 					</button>
