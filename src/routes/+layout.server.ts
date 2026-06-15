@@ -23,7 +23,20 @@ export const load: LayoutServerLoad = async ({ locals }) => {
 		}
 	});
 
-	const config: App.Config = JSON.parse(await fs.readFile('config.json', 'utf-8'));
-
-	return { categories, config };
+	try {
+		const config: App.Config = JSON.parse(await fs.readFile('config.json', 'utf-8'));
+		return { categories, config };
+	} catch (error) {
+		console.error('Error reading config.json:', error);
+		const config: App.Config = {
+			title: 'Kasse',
+			itemsPerRow: 3,
+			currency: {
+				before: '€',
+				after: '',
+				digits: 2
+			}
+		};
+		return { categories, config };
+	}
 };
