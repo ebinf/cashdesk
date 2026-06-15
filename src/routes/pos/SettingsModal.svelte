@@ -24,6 +24,15 @@
 	>
 		<div class="w-4/5 max-w-2xl overflow-hidden rounded-lg bg-gray-50 p-4 shadow-xl">
 			<div class="mb-8 flex flex-col justify-start gap-4">
+				<button
+					type="button"
+					onclick={() => {
+						document.documentElement.requestFullscreen();
+					}}
+					class="w-full rounded-md bg-gray-600 px-3.5 py-4.5 text-base font-semibold text-white shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600 disabled:cursor-not-allowed disabled:bg-gray-400"
+				>
+					Vollbild
+				</button>
 				<a
 					href="/settings"
 					class="w-full rounded-md bg-gray-600 px-3.5 py-4.5 text-center text-base font-semibold text-white shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600 disabled:cursor-not-allowed disabled:bg-gray-400"

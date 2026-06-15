@@ -26,14 +26,9 @@
 
 	let connectionState = $state(0);
 	let connectionTimeout: NodeJS.Timeout | null = null;
-	let eventSources: EventSource[] = [];
-	let eventSource: EventSource | undefined = $derived.by(() => {
-		if (!browser) return undefined;
-		eventSources.forEach((es) => es.close());
-		const eventSource = new EventSource('/sse');
-		eventSources.push(eventSource);
-		return eventSource;
-	});
+	let eventSource: EventSource | undefined = $derived(
+		browser ? new EventSource('/sse') : undefined
+	);
 
 	$effect(() => {
 		if (!eventSource) return;
@@ -54,15 +49,20 @@
 		};
 
 		eventSource.onerror = () => {
+			if (connectionTimeout) {
+				clearTimeout(connectionTimeout);
+			}
 			connectionTimeout = setTimeout(() => {
 				connectionState = eventSource.readyState;
 			}, 2000);
 		};
 
 		eventSource.onopen = () => {
-			connectionTimeout = setTimeout(() => {
-				connectionState = eventSource.readyState;
-			}, 2000);
+			connectionState = eventSource.readyState;
+			if (connectionTimeout) {
+				clearTimeout(connectionTimeout);
+				connectionTimeout = null;
+			}
 		};
 	});
 </script>
