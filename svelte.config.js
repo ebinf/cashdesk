@@ -1,4 +1,5 @@
 import adapter from '@sveltejs/adapter-node';
+import pkg from './package.json' with { type: 'json' };
 
 /** @type {import('@sveltejs/kit').Config} */
 const config = {
@@ -21,6 +22,9 @@ const config = {
 		},
 		experimental: {
 			remoteFunctions: true
+		},
+		version: {
+			name: pkg.version
 		}
 	}
 };

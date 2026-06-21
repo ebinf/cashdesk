@@ -5,7 +5,6 @@
 	import ItemButton from '../pos/ItemButton.svelte';
 	import type { PageData } from './$types';
 	import {
-		addCategory,
 		deleteCategory,
 		deleteProduct,
 		moveCategoryDown,
@@ -17,7 +16,6 @@
 	import ProductModal from './ProductModal.svelte';
 	import TrashBinModal from './TrashBinModal.svelte';
 	import SettingsModal from './SettingsModal.svelte';
-	import { set } from 'valibot';
 
 	let { data }: { data: PageData } = $props();
 
