@@ -19,7 +19,9 @@ export const GET: RequestHandler = async ({}) => {
 	const stream = new ReadableStream<string>({
 		start(controller) {
 			listeners.push(controller);
-			controller.enqueue('data: connected\n\n');
+			setTimeout(() => {
+				controller.enqueue('data: connected\n\n');
+			}, 200);
 		},
 		cancel() {}
 	});
