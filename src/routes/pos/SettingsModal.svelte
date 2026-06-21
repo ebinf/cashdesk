@@ -27,11 +27,53 @@
 				<button
 					type="button"
 					onclick={() => {
-						document.documentElement.requestFullscreen();
+						if (
+							!document.fullscreenElement &&
+							// @ts-ignore
+							!document.mozFullScreenElement &&
+							// @ts-ignore
+							!document.webkitFullscreenElement
+						) {
+							if (document.documentElement.requestFullscreen) {
+								document.documentElement.requestFullscreen();
+							} else if (
+								// @ts-ignore
+								document.documentElement.mozRequestFullScreen
+							) {
+								// @ts-ignore
+								document.documentElement.mozRequestFullScreen();
+							} else if (
+								// @ts-ignore
+								document.documentElement.webkitRequestFullscreen
+							) {
+								// @ts-ignore
+								document.documentElement.webkitRequestFullscreen(Element.ALLOW_KEYBOARD_INPUT);
+							}
+						} else {
+							if (
+								// @ts-ignore
+								document.cancelFullScreen
+							) {
+								// @ts-ignore
+								document.cancelFullScreen();
+							} else if (
+								// @ts-ignore
+								document.mozCancelFullScreen
+							) {
+								// @ts-ignore
+								document.mozCancelFullScreen();
+							} else if (
+								// @ts-ignore
+								document.webkitCancelFullScreen
+							) {
+								// @ts-ignore
+								document.webkitCancelFullScreen();
+							}
+						}
 					}}
 					class="w-full rounded-md bg-gray-600 px-3.5 py-4.5 text-base font-semibold text-white shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600 disabled:cursor-not-allowed disabled:bg-gray-400"
 				>
-					Vollbild
+					Vollbild umschalten
 				</button>
 				<a
 					href="/settings"

@@ -61,41 +61,66 @@
 
 	const clearOrder = async () => {
 		currentOrder = new Map();
-		if (floatingOrderId) {
-			await clearFloatingOrder(floatingOrderId);
-			floatingOrderId = null;
-			if (floatingOrderInterval) {
-				clearInterval(floatingOrderInterval);
-				floatingOrderInterval = null;
-			}
-		}
+		resetFloatingOrder();
 	};
+
+	async function setupNewFloatingOrder() {
+		if (floatingOrderId) return;
+		floatingOrderId = await newFloatingOrder();
+		floatingOrderInterval = setInterval(() => {
+			if (floatingOrderId) {
+				keepAliveFloatingOrder(floatingOrderId);
+			}
+		}, 10 * 1000);
+		for (const [key, amount] of currentOrder.entries()) {
+			const [productId, variantId] = key.split('_').map(Number);
+			await updateItemAmountInFloatingOrder({
+				orderId: floatingOrderId!,
+				productId,
+				variantId: isNaN(variantId) ? undefined : variantId,
+				amount
+			});
+		}
+	}
+
+	function resetFloatingOrder() {
+		if (!floatingOrderId) return;
+		clearFloatingOrder(floatingOrderId);
+		floatingOrderId = null;
+		if (floatingOrderInterval) {
+			clearInterval(floatingOrderInterval);
+			floatingOrderInterval = null;
+		}
+	}
 
 	const addItem = async (product: Product, variant?: Variant) => {
 		if (!floatingOrderId) {
-			floatingOrderId = await newFloatingOrder();
-			floatingOrderInterval = setInterval(() => {
-				if (floatingOrderId) {
-					keepAliveFloatingOrder(floatingOrderId);
-				}
-			}, 10 * 1000);
+			await setupNewFloatingOrder();
 		}
 		const index = `${product.id}${variant ? `_${variant.id}` : ''}`;
 		if (currentOrder.has(index)) {
 			currentOrder.set(index, currentOrder.get(index)! + 1);
-			await updateItemAmountInFloatingOrder({
-				orderId: floatingOrderId,
-				productId: product.id,
-				variantId: variant?.id,
-				amount: currentOrder.get(index)!
-			});
+			if (
+				(await updateItemAmountInFloatingOrder({
+					orderId: floatingOrderId!,
+					productId: product.id,
+					variantId: variant?.id,
+					amount: currentOrder.get(index)!
+				})) === false
+			) {
+				await setupNewFloatingOrder();
+			}
 		} else {
 			currentOrder.set(index, 1);
-			await addItemToFloatingOrder({
-				orderId: floatingOrderId,
-				productId: product.id,
-				variantId: variant?.id
-			});
+			if (
+				(await addItemToFloatingOrder({
+					orderId: floatingOrderId!,
+					productId: product.id,
+					variantId: variant?.id
+				})) === false
+			) {
+				await setupNewFloatingOrder();
+			}
 		}
 		currentOrder = new Map(currentOrder);
 	};
@@ -103,24 +128,31 @@
 	const removeItem = async (product: number, variant?: number) => {
 		const index = `${product}${variant ? `_${variant}` : ''}`;
 		if (!currentOrder.has(index)) return;
+		if (!floatingOrderId) {
+			await setupNewFloatingOrder();
+		}
 		if (currentOrder.get(index)! <= 1) {
 			currentOrder.delete(index);
-			if (floatingOrderId) {
-				await removeItemFromFloatingOrder({
-					orderId: floatingOrderId,
+			if (
+				(await removeItemFromFloatingOrder({
+					orderId: floatingOrderId!,
 					productId: product,
 					variantId: variant
-				});
+				})) === false
+			) {
+				await setupNewFloatingOrder();
 			}
 		} else {
 			currentOrder.set(index, currentOrder.get(index)! - 1);
-			if (floatingOrderId) {
-				await updateItemAmountInFloatingOrder({
-					orderId: floatingOrderId,
+			if (
+				(await updateItemAmountInFloatingOrder({
+					orderId: floatingOrderId!,
 					productId: product,
 					variantId: variant,
 					amount: currentOrder.get(index)!
-				});
+				})) === false
+			) {
+				await setupNewFloatingOrder();
 			}
 		}
 		currentOrder = new Map(currentOrder);
@@ -135,18 +167,12 @@
 	});
 
 	onNavigate(async () => {
-		if (floatingOrderId) {
-			await clearFloatingOrder(floatingOrderId);
-			floatingOrderId = null;
-		}
+		resetFloatingOrder();
 	});
 
 	if (browser) {
 		window.onbeforeunload = async (event) => {
-			if (floatingOrderId) {
-				await clearFloatingOrder(floatingOrderId);
-				floatingOrderId = null;
-			}
+			resetFloatingOrder();
 		};
 	}
 </script>
@@ -251,8 +277,9 @@
 			{totalPrice}
 			open={payModalOpen}
 			onpayed={async () => {
+				let floatingOrderSubmitResult: null | boolean = null;
 				if (floatingOrderId) {
-					await submitFloatingOrder({
+					floatingOrderSubmitResult = await submitFloatingOrder({
 						floatingOrderId: floatingOrderId,
 						items: Array.from(currentOrder.entries()).map(([key, amount]) => {
 							const [productId, variantId] = key.split('_').map(Number);
@@ -260,7 +287,8 @@
 						}),
 						total: totalPrice
 					});
-				} else {
+				}
+				if (!floatingOrderId || floatingOrderSubmitResult === false) {
 					await submitOrder({
 						items: Array.from(currentOrder.entries()).map(([key, amount]) => {
 							const [productId, variantId] = key.split('_').map(Number);
@@ -269,7 +297,7 @@
 						total: totalPrice
 					});
 				}
-				floatingOrderId = null;
+				resetFloatingOrder();
 				currentOrder = new Map();
 				payModalOpen = false;
 			}}

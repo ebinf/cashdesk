@@ -13,6 +13,9 @@ export const newFloatingOrder = command(async () => {
 });
 
 export const clearFloatingOrder = command(v.number(), async (id) => {
+	if (!(await client.floatingOrder.findUnique({ where: { id } }))) {
+		return false;
+	}
 	if (floatingOrderKeepAliveTimeouts[id]) {
 		clearTimeout(floatingOrderKeepAliveTimeouts[id]);
 		delete floatingOrderKeepAliveTimeouts[id];
@@ -24,6 +27,9 @@ export const clearFloatingOrder = command(v.number(), async (id) => {
 });
 
 export const keepAliveFloatingOrder = command(v.number(), async (id) => {
+	if (!(await client.floatingOrder.findUnique({ where: { id } }))) {
+		return false;
+	}
 	await client.floatingOrder.update({
 		where: { id },
 		data: {
@@ -45,6 +51,9 @@ export const addItemToFloatingOrder = command(
 		variantId: v.optional(v.number())
 	}),
 	async (data) => {
+		if (!(await client.floatingOrder.findUnique({ where: { id: data.orderId } }))) {
+			return false;
+		}
 		await client.floatingOrder.update({
 			where: { id: data.orderId },
 			data: {
@@ -69,6 +78,9 @@ export const removeItemFromFloatingOrder = command(
 		variantId: v.optional(v.number())
 	}),
 	async (data) => {
+		if (!(await client.floatingOrder.findUnique({ where: { id: data.orderId } }))) {
+			return false;
+		}
 		await client.orderItem.deleteMany({
 			where: {
 				orderId: null,
@@ -90,6 +102,9 @@ export const updateItemAmountInFloatingOrder = command(
 		amount: v.number()
 	}),
 	async (data) => {
+		if (!(await client.floatingOrder.findUnique({ where: { id: data.orderId } }))) {
+			return false;
+		}
 		if (
 			(await client.orderItem.count({
 				where: {
@@ -173,6 +188,9 @@ export const submitFloatingOrder = command(
 		)
 	}),
 	async (data) => {
+		if (!(await client.floatingOrder.findUnique({ where: { id: data.floatingOrderId } }))) {
+			return false;
+		}
 		const order = await client.order.create({
 			data: {
 				totalPrice: data.total,
