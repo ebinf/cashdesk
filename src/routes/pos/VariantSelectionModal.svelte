@@ -5,12 +5,13 @@
 
 	interface Props {
 		config: App.Config;
+		categoryColor?: Color;
 		openItem: Prisma.ProductGetPayload<{ include: { variants: true } }> | null;
 		onselected: (variant: Variant) => void;
 		oncancel: () => void;
 	}
 
-	let { config, openItem, oncancel, onselected }: Props = $props();
+	let { config, categoryColor, openItem, oncancel, onselected }: Props = $props();
 </script>
 
 {#if openItem !== null && openItem.variants}
@@ -20,7 +21,7 @@
 		<div class="w-4/5 max-w-2xl overflow-hidden rounded-lg bg-gray-50 p-4 shadow-xl">
 			<div class="mb-4 flex flex-row justify-start gap-4">
 				{#each openItem.variants.filter((v) => !v.isArchived) as variant (variant.id)}
-					{@const color: Color = variant.color ?? openItem.color ?? Color.red}
+					{@const color: Color = variant.color ?? openItem.color ?? categoryColor ?? Color.red}
 					<button
 						onclick={() => {
 							onselected(variant);

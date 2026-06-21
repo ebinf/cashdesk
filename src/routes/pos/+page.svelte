@@ -228,6 +228,8 @@
 		<SettingsModal config={data.config} bind:open={showSettings} />
 		<VariantSelectionModal
 			openItem={variantOpenItem}
+			categoryColor={data.categories.find((c) => c.products.some((p) => p.id === variantOpenItemId))
+				?.color}
 			config={data.config}
 			onselected={(variant: Variant) => {
 				if (!variantOpenItem) return;
