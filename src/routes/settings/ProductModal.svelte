@@ -32,6 +32,7 @@
 	let name: string = $derived(product?.name ?? '');
 	let categoryId: number = $derived(category);
 	let price: number = $derived(product?.price ?? 0);
+	let hideInOrders: boolean = $derived(product?.hideInOrders ?? false);
 
 	let editVariant: number | true | null = $state(null);
 </script>
@@ -123,6 +124,25 @@
 								<option value={c.id}>{c.name}</option>
 							{/each}
 						</select>
+					</div>
+				</div>
+				<div>
+					<label for="hideInOrders" class="block text-sm leading-6 font-medium text-gray-900">
+						In Bestellungen verstecken
+					</label>
+					<div class="mt-2">
+						<label class="flex flex-row items-start gap-2 text-sm text-gray-500">
+							<input
+								type="checkbox"
+								name="hideInOrders"
+								id="hideInOrders"
+								class="mt-1 rounded-md border-0 text-gray-900 shadow-sm ring-1 ring-gray-300"
+								bind:checked={hideInOrders}
+							/>
+							Das Produkt kann zwar gekauft werden, wird aber in der Bestellübersicht nicht angezeigt.
+							Das ist nützlich für Produkte, die zwar bezahlt werden müssen, aber nicht herausgegeben
+							werden, beispielsweise Pfand oder Spenden.
+						</label>
 					</div>
 				</div>
 				<div>
@@ -318,7 +338,8 @@
 									name: name,
 									color: color,
 									price: price,
-									categoryId: categoryId
+									categoryId: categoryId,
+									hideInOrders: hideInOrders
 								})
 							) {
 								onclose?.();
@@ -329,7 +350,8 @@
 									name: name,
 									color: color,
 									price: price,
-									categoryId: categoryId
+									categoryId: categoryId,
+									hideInOrders: hideInOrders
 								})
 							) {
 								onclose?.();

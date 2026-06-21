@@ -246,6 +246,11 @@ export const getActiveOrders = query(async () => {
 				include: {
 					product: true,
 					variant: true
+				},
+				where: {
+					product: {
+						hideInOrders: false
+					}
 				}
 			}
 		},
@@ -266,6 +271,11 @@ export const getFloatingOrders = query(async () => {
 				include: {
 					product: true,
 					variant: true
+				},
+				where: {
+					product: {
+						hideInOrders: false
+					}
 				}
 			}
 		},

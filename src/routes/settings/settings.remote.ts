@@ -197,7 +197,8 @@ export const addProduct = command(
 		name: v.string(),
 		color: v.optional(v.enum(Color)),
 		price: v.number(),
-		categoryId: v.number()
+		categoryId: v.number(),
+		hideInOrders: v.optional(v.boolean())
 	}),
 	async (data) => {
 		const largestOrder = await client.product.findFirst({
@@ -218,7 +219,8 @@ export const addProduct = command(
 				color: data.color ?? null,
 				price: data.price,
 				categoryId: data.categoryId,
-				order: (largestOrder?.order ?? 0) + 1
+				order: (largestOrder?.order ?? 0) + 1,
+				hideInOrders: data.hideInOrders ?? false
 			}
 		});
 		events.emit('update', 'catalogue');
@@ -232,7 +234,8 @@ export const editProduct = command(
 		name: v.string(),
 		color: v.optional(v.enum(Color)),
 		price: v.number(),
-		categoryId: v.number()
+		categoryId: v.number(),
+		hideInOrders: v.optional(v.boolean())
 	}),
 	async (data) => {
 		const product = await client.product.findUnique({
@@ -265,7 +268,8 @@ export const editProduct = command(
 					name: data.name,
 					color: data.color ?? null,
 					price: data.price,
-					categoryId: data.categoryId
+					categoryId: data.categoryId,
+					hideInOrders: data.hideInOrders ?? false
 				}
 			});
 		} else {
@@ -276,6 +280,7 @@ export const editProduct = command(
 					price: data.price,
 					categoryId: data.categoryId,
 					order: product.order,
+					hideInOrders: data.hideInOrders ?? false,
 					variants: {
 						create: product.variants.map((v) => ({
 							name: v.name,

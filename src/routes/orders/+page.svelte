@@ -57,11 +57,11 @@
 	});
 </script>
 
-<div class="mt-5 flex flex-row items-center justify-between gap-4">
+<div class="mt-5 flex max-w-full flex-row items-center justify-between gap-4">
 	<select
 		bind:value={combinedFilter}
 		multiple
-		class="h-10 resize rounded-lg bg-gray-50 px-4 py-2 text-gray-800 shadow-xl"
+		class="h-10 shrink resize rounded-lg bg-gray-50 px-4 py-2 text-gray-800 shadow-xl"
 	>
 		<optgroup label="Kategorien">
 			{#each data.categories.filter((c) => !c.isArchived) as category}
@@ -73,7 +73,7 @@
 		</option>
 		{#each data.categories.filter((c) => !c.isArchived && c.products.some((p) => !p.isArchived)) as category}
 			<optgroup label={category.name}>
-				{#each category.products.filter((p) => !p.isArchived) as product}
+				{#each category.products.filter((p) => !p.isArchived && !p.hideInOrders) as product}
 					<option value="p_{product.id}">
 						<span>
 							{@html product.name.replace(/\*(\S+)\*/g, '<span class="font-bold">*$1*</span>')}
@@ -85,7 +85,7 @@
 	</select>
 
 	<button
-		class="h-10 rounded-lg bg-gray-50 px-4 py-2 text-gray-800 shadow-xl hover:bg-gray-100"
+		class="h-10 shrink-0 rounded-lg bg-gray-50 px-4 py-2 text-gray-800 shadow-xl hover:bg-gray-100"
 		onclick={() => orderPanel?.requestFullscreen()}
 	>
 		Vollbild
