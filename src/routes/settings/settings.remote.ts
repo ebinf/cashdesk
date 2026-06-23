@@ -17,8 +17,17 @@ export const editSettings = command(
 		})
 	}),
 	async (data) => {
-		const currentConfig: App.Config = JSON.parse(await fs.readFile(CONFIG_PATH, 'utf-8'));
-		await fs.writeFile(CONFIG_PATH, JSON.stringify({ ...currentConfig, ...data }, null, 2));
+		try {
+			const currentConfig: App.Config = JSON.parse(await fs.readFile(CONFIG_PATH, 'utf-8'));
+			await fs.writeFile(CONFIG_PATH, JSON.stringify({ ...currentConfig, ...data }, null, 2));
+		} catch (e: any) {
+			if (e.code && e.code === 'ENOENT') {
+				await fs.writeFile(CONFIG_PATH, JSON.stringify(data, null, 2));
+			} else {
+				console.error('Error editing settings:', e);
+				return false;
+			}
+		}
 		events.emit('update', 'catalogue');
 		return true;
 	}
