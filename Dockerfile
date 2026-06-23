@@ -16,6 +16,7 @@ COPY package.json .
 EXPOSE 8000
 ENV NODE_ENV=production
 ENV DATABASE_URL="file:/data/database.db" 
+ENV CONFIG_PATH="/data/config.json"
 ENV SERVER_PORT=8000
 ENV SERVER_PROTOCOL_HEADER="X-Forwarded-Proto"
 ENV SERVER_HOST_HEADER="X-Forwarded-Host"

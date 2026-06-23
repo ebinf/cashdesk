@@ -1,9 +1,10 @@
 import * as v from 'valibot';
-import { command } from '$app/server';
+import { command, form } from '$app/server';
 import { client } from '$lib/server/database';
 import { Color, PaymentStatus } from '$lib/prisma/enums';
 import events from '$lib/server/events';
 import fs from 'node:fs/promises';
+import { CONFIG_PATH, DATABASE_URL } from '$lib/server/environment';
 
 export const editSettings = command(
 	v.object({
@@ -16,8 +17,8 @@ export const editSettings = command(
 		})
 	}),
 	async (data) => {
-		const currentConfig: App.Config = JSON.parse(await fs.readFile('config.json', 'utf-8'));
-		await fs.writeFile('config.json', JSON.stringify({ ...currentConfig, ...data }, null, 2));
+		const currentConfig: App.Config = JSON.parse(await fs.readFile(CONFIG_PATH, 'utf-8'));
+		await fs.writeFile(CONFIG_PATH, JSON.stringify({ ...currentConfig, ...data }, null, 2));
 		events.emit('update', 'catalogue');
 		return true;
 	}
@@ -35,7 +36,7 @@ export const editCardPayment = command(
 		})
 	}),
 	async (data) => {
-		const currentConfig: App.Config = JSON.parse(await fs.readFile('config.json', 'utf-8'));
+		const currentConfig: App.Config = JSON.parse(await fs.readFile(CONFIG_PATH, 'utf-8'));
 		if (data.sumUpIntegration.accessToken === '__UNCHANGED__') {
 			data.sumUpIntegration.accessToken =
 				currentConfig.cardPayment?.sumUpIntegration?.accessToken ?? '';
@@ -46,7 +47,7 @@ export const editCardPayment = command(
 			}
 		}
 		await fs.writeFile(
-			'config.json',
+			CONFIG_PATH,
 			JSON.stringify({ ...currentConfig, cardPayment: data }, null, 2)
 		);
 		events.emit('update', 'catalogue');
@@ -702,4 +703,25 @@ export const deleteAllOrders = command(async () => {
 	await client.$queryRaw`DELETE FROM "SQLITE_SEQUENCE" WHERE name = 'Order';`;
 	events.emit('update', 'activeOrders');
 	events.emit('update', 'floatingOrders');
+});
+
+export const importDatabase = form(v.object({ file: v.file() }), async ({ file }) => {
+	const dbFileName = DATABASE_URL.replace('file:', '');
+	try {
+		await client.$disconnect();
+		await fs.copyFile(dbFileName, `${dbFileName}.backup`);
+		await fs.writeFile(dbFileName, Buffer.from(await file.arrayBuffer()));
+		await client.$connect();
+		events.emit('update', 'catalogue');
+		events.emit('update', 'activeOrders');
+		events.emit('update', 'floatingOrders');
+		return true;
+	} catch (e) {
+		console.error('Error importing database:', e);
+		await fs.copyFile(`${dbFileName}.backup`, dbFileName);
+		await client.$connect();
+		return false;
+	} finally {
+		await fs.unlink(`${dbFileName}.backup`).catch(() => {});
+	}
 });

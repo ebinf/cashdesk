@@ -6,11 +6,13 @@ import { getSumUp } from '$lib/server/sumUp';
 import { client } from '$lib/server/database';
 import { APIError, type TransactionStatus } from '@sumup/sdk';
 import { PaymentStatus } from '$lib/enums';
+import { env } from '$env/dynamic/private';
+import { CONFIG_PATH } from '$lib/server/environment';
 
 const sumUp = await getSumUp();
 
 const getConfig = async (): Promise<App.Config> => {
-	const currentConfig: App.Config = JSON.parse(await fs.readFile('config.json', 'utf-8'));
+	const currentConfig: App.Config = JSON.parse(await fs.readFile(CONFIG_PATH, 'utf-8'));
 	return currentConfig;
 };
 

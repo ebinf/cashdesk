@@ -1,4 +1,5 @@
 import { client } from '$lib/server/database';
+import { CONFIG_PATH } from '$lib/server/environment';
 import type { LayoutServerLoad } from './$types';
 import fs from 'node:fs/promises';
 
@@ -24,13 +25,13 @@ export const load: LayoutServerLoad = async ({ locals }) => {
 	});
 
 	try {
-		const config: App.Config = JSON.parse(await fs.readFile('config.json', 'utf-8'));
+		const config: App.Config = JSON.parse(await fs.readFile(CONFIG_PATH, 'utf-8'));
 		if (config.cardPayment?.sumUpIntegration?.accessToken) {
 			config.cardPayment.sumUpIntegration.accessToken = '__UNCHANGED__';
 		}
 		return { categories, config };
 	} catch (error) {
-		console.error('Error reading config.json:', error);
+		console.error('Error reading config:', error);
 		const config: App.Config = {
 			title: 'Kasse',
 			itemsPerRow: 3,

@@ -2,7 +2,8 @@
 	import {
 		cancelDanglingCardPayments,
 		deleteAllOrders,
-		deleteFloatingOrders
+		deleteFloatingOrders,
+		importDatabase
 	} from './settings.remote';
 
 	interface Props {
@@ -13,6 +14,8 @@
 	let { open = $bindable(false), config }: Props = $props();
 
 	let submitting = $state(false);
+
+	let fileImport: HTMLInputElement | null = $state(null);
 </script>
 
 {#if open}
@@ -82,6 +85,49 @@
 				>
 					Alle Bestellungen löschen & Kassenstand zurücksetzen
 				</button>
+				<hr class="border-gray-300" />
+				<a
+					href="/settings/export-db"
+					target="_blank"
+					class="block w-full rounded-md bg-gray-600 px-3.5 py-4.5 text-center text-base font-semibold text-white shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600 disabled:cursor-not-allowed disabled:bg-gray-300"
+				>
+					Datenbank exportieren (SQLite)
+				</a>
+				<form {...importDatabase} enctype="multipart/form-data" class="w-full">
+					<input
+						{...importDatabase.fields.file.as('file')}
+						bind:this={fileImport}
+						accept=".sqlite,.db"
+						class="hidden"
+						onchange={async (event) => {
+							const file = (event.target as HTMLInputElement).files?.[0];
+							if (!file) return;
+							if (
+								!confirm(
+									'Sind Sie sicher, dass Sie die Datenbank importieren möchten? Alle aktuellen Daten gehen verloren.'
+								)
+							)
+								return;
+							if (
+								!confirm(
+									'Sind Sie wirklich sicher? Alle aktuellen Daten (Bestellungen, Kassenstand, Artikel, Kategorien) gehen verloren und können nicht wiederhergestellt werden.'
+								)
+							)
+								return;
+							await importDatabase.submit();
+						}}
+					/>
+					<button
+						type="button"
+						disabled={submitting}
+						onclick={() => {
+							fileImport?.click();
+						}}
+						class="block w-full rounded-md bg-red-600 px-3.5 py-4.5 text-center text-base font-semibold text-white shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600 disabled:cursor-not-allowed disabled:bg-red-300"
+					>
+						Datenbank importieren (SQLite)
+					</button>
+				</form>
 			</div>
 			<div class="mt-8 flex flex-col justify-start gap-4">
 				<button
