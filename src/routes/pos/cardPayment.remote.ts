@@ -2,10 +2,12 @@ import * as v from 'valibot';
 import { command, query } from '$app/server';
 import fs from 'node:fs/promises';
 import { PaymentStatus as PrismaPaymentStatus } from '$lib/prisma/enums';
-import { sumUp } from '$lib/server/sumUp';
+import { getSumUp } from '$lib/server/sumUp';
 import { client } from '$lib/server/database';
 import { APIError, type TransactionStatus } from '@sumup/sdk';
 import { PaymentStatus } from '$lib/enums';
+
+const sumUp = await getSumUp();
 
 const getConfig = async (): Promise<App.Config> => {
 	const currentConfig: App.Config = JSON.parse(await fs.readFile('config.json', 'utf-8'));
