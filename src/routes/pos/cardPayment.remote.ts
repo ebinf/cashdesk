@@ -156,7 +156,6 @@ export const cardPaymentStatus = query.live(
 					finalStatus = transaction.status;
 					break;
 				}
-				console.log(transaction.status);
 			} catch (e) {
 				console.log(e);
 				if (e instanceof APIError && e.status === 404) {
@@ -208,7 +207,8 @@ export const cancelCardPayment = command(
 				[
 					PrismaPaymentStatus.cancelled,
 					PrismaPaymentStatus.failed,
-					PrismaPaymentStatus.completed
+					PrismaPaymentStatus.completed,
+					PrismaPaymentStatus.error
 				] as PrismaPaymentStatus[]
 			).includes(dbPayment.status)
 		) {

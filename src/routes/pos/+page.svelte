@@ -110,6 +110,7 @@
 					amount: currentOrder.get(index)!
 				})) === false
 			) {
+				floatingOrderId = null;
 				await setupNewFloatingOrder();
 			}
 		} else {
@@ -121,6 +122,7 @@
 					variantId: variant?.id
 				})) === false
 			) {
+				floatingOrderId = null;
 				await setupNewFloatingOrder();
 			}
 		}
@@ -142,6 +144,8 @@
 					variantId: variant
 				})) === false
 			) {
+				floatingOrderId = null;
+
 				await setupNewFloatingOrder();
 			}
 		} else {
@@ -154,6 +158,8 @@
 					amount: currentOrder.get(index)!
 				})) === false
 			) {
+				floatingOrderId = null;
+
 				await setupNewFloatingOrder();
 			}
 		}
@@ -273,7 +279,7 @@
 						</button>
 						<button
 							onclick={() => (cardPayModalOpen = true)}
-							disabled={currentOrder.size === 0}
+							disabled={currentOrder.size === 0 || totalPrice <= 0}
 							type="button"
 							class="shrink-0 rounded-md bg-blue-600 px-3.5 py-10 text-2xl font-semibold text-white shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 disabled:cursor-not-allowed disabled:bg-blue-300"
 						>

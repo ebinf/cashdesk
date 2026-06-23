@@ -21,7 +21,7 @@
 	$effect(() => {
 		if (!open) return;
 		if (!config.cardPayment?.sumUpIntegration?.enabled) return;
-		if (!totalPrice || totalPrice == 0) return;
+		if (!totalPrice || totalPrice <= 0) return;
 		if (paymentId) return;
 		if (paymentStarting) return;
 		if (submitting) return;
@@ -79,7 +79,7 @@
 
 			<div class="mt-4 text-center">
 				<h1 class="text-2xl leading-6 font-semibold text-gray-900">Kartenzahlung</h1>
-				{#if totalPrice !== null && totalPrice !== undefined && totalPrice !== 0}
+				{#if totalPrice !== null && totalPrice !== undefined && totalPrice > 0}
 					<h2 class="mt-1 text-xl leading-6 text-gray-600">
 						Zu zahlen:
 						<span class="font-bold">

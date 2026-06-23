@@ -1,7 +1,7 @@
 import * as v from 'valibot';
 import { command } from '$app/server';
 import { client } from '$lib/server/database';
-import { Color } from '$lib/prisma/enums';
+import { Color, PaymentStatus } from '$lib/prisma/enums';
 import events from '$lib/server/events';
 import fs from 'node:fs/promises';
 
@@ -36,13 +36,13 @@ export const editCardPayment = command(
 	}),
 	async (data) => {
 		const currentConfig: App.Config = JSON.parse(await fs.readFile('config.json', 'utf-8'));
+		if (data.sumUpIntegration.accessToken === '__UNCHANGED__') {
+			data.sumUpIntegration.accessToken =
+				currentConfig.cardPayment?.sumUpIntegration?.accessToken ?? '';
+		}
 		if (data.sumUpIntegration.enabled) {
 			if (!data.sumUpIntegration.accessToken || !data.sumUpIntegration.merchantCode) {
 				data.sumUpIntegration.enabled = false;
-			}
-			if (data.sumUpIntegration.accessToken === '__UNCHANGED__') {
-				data.sumUpIntegration.accessToken =
-					currentConfig.cardPayment?.sumUpIntegration?.accessToken ?? '';
 			}
 		}
 		await fs.writeFile(
@@ -666,4 +666,40 @@ export const restoreVariant = command(v.number(), async (id) => {
 		}
 	});
 	events.emit('update', 'catalogue');
+});
+
+export const cancelDanglingCardPayments = command(async () => {
+	await client.sumUpPayment.updateMany({
+		data: {
+			status: PaymentStatus.cancelled
+		},
+		where: {
+			status: {
+				in: [PaymentStatus.inProcess, PaymentStatus.pending, PaymentStatus.waitingForTerminal]
+			}
+		}
+	});
+});
+
+export const deleteFloatingOrders = command(async () => {
+	await client.orderItem.deleteMany({
+		where: {
+			order: null,
+			floatingOrder: {
+				isNot: null
+			}
+		}
+	});
+	await client.floatingOrder.deleteMany({});
+	events.emit('update', 'floatingOrders');
+});
+
+export const deleteAllOrders = command(async () => {
+	await client.orderItem.deleteMany({});
+	await client.floatingOrder.deleteMany({});
+	await client.order.deleteMany({});
+	await client.sumUpPayment.deleteMany({});
+	await client.$queryRaw`DELETE FROM "SQLITE_SEQUENCE" WHERE name = 'Order';`;
+	events.emit('update', 'activeOrders');
+	events.emit('update', 'floatingOrders');
 });
