@@ -157,12 +157,12 @@ export const cardPaymentStatus = query.live(
 					break;
 				}
 			} catch (e) {
-				console.log(e);
 				if (e instanceof APIError && e.status === 404) {
 					continue;
 				}
-				console.error('Failed to get transaction status');
+				console.log(e);
 				yield cardPaymentError({ paymentId: data.paymentId });
+				console.error('Failed to get transaction status');
 				return;
 			}
 			await new Promise((t) => setTimeout(t, 1000));

@@ -347,10 +347,23 @@ export const markOrderDone = command(v.number(), async (id) => {
 });
 
 export const getTotal = query(async () => {
-	const total = await client.order.aggregate({
+	const byMethod = await client.order.groupBy({
+		by: ['paymentMethod'],
+		_count: {
+			_all: true
+		},
 		_sum: {
 			totalPrice: true
 		}
 	});
-	return total._sum.totalPrice;
+	const total = await client.order.aggregate({
+		_sum: {
+			totalPrice: true
+		},
+		_count: {
+			_all: true
+		}
+	});
+
+	return { total, byMethod };
 });

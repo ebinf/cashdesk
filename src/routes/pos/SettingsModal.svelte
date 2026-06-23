@@ -1,21 +1,14 @@
 <script lang="ts">
-	import FormattedCurrency from '$lib/FormattedCurrency.svelte';
-	import { getTotal } from '../commands.remote';
+	import CashingUpModal from './CashingUpModal.svelte';
 
 	interface Props {
 		config: App.Config;
 		open: boolean;
 	}
 
-	let total: number | null = $state(null);
-
 	let { open = $bindable(), config }: Props = $props();
 
-	$effect(() => {
-		if (!open) {
-			total = null;
-		}
-	});
+	let cashingUpModalOpen = $state(false);
 </script>
 
 {#if open}
@@ -83,13 +76,12 @@
 				</a>
 				<button
 					type="button"
-					onclick={async () => {
-						await getTotal().refresh();
-						total = await getTotal();
+					onclick={() => {
+						cashingUpModalOpen = true;
 					}}
 					class="w-full rounded-md bg-gray-600 px-3.5 py-4.5 text-base font-semibold text-white shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600 disabled:cursor-not-allowed disabled:bg-gray-400"
 				>
-					Kassensturz{#if total}: <FormattedCurrency amount={total} showSign={true} {config} />{/if}
+					Kassensturz
 				</button>
 			</div>
 			<button
@@ -99,8 +91,10 @@
 				type="button"
 				class="w-full rounded-md border border-gray-300 bg-gray-50 px-3.5 py-4 text-base font-semibold text-gray-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600"
 			>
-				Abbrechen
+				Schließen
 			</button>
 		</div>
 	</div>
 {/if}
+
+<CashingUpModal bind:open={cashingUpModalOpen} {config} />
