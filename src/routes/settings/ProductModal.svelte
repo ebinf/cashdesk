@@ -157,11 +157,11 @@
 							id="price"
 							step="0.{'0'.repeat(config.currency.digits - 1)}1"
 							class="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-gray-300 ring-inset placeholder:text-gray-400 focus:ring-2 focus:ring-gray-600 focus:ring-inset sm:text-sm sm:leading-6"
-							value={(price / 100).toFixed(config.currency.digits)}
+							value={(price / 10 ** config.currency.digits).toFixed(config.currency.digits)}
 							onchange={(e) => {
 								const value = parseFloat((e.target as HTMLInputElement).value);
 								if (!isNaN(value)) {
-									price = Math.round(value * 100);
+									price = Math.round(value * 10 ** config.currency.digits);
 								}
 							}}
 						/>

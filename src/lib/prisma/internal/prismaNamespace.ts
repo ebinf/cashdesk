@@ -389,7 +389,8 @@ export const ModelName = {
   Variant: 'Variant',
   FloatingOrder: 'FloatingOrder',
   Order: 'Order',
-  OrderItem: 'OrderItem'
+  OrderItem: 'OrderItem',
+  SumUpPayment: 'SumUpPayment'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -405,7 +406,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "category" | "product" | "variant" | "floatingOrder" | "order" | "orderItem"
+    modelProps: "category" | "product" | "variant" | "floatingOrder" | "order" | "orderItem" | "sumUpPayment"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -853,6 +854,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    SumUpPayment: {
+      payload: Prisma.$SumUpPaymentPayload<ExtArgs>
+      fields: Prisma.SumUpPaymentFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.SumUpPaymentFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SumUpPaymentPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.SumUpPaymentFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SumUpPaymentPayload>
+        }
+        findFirst: {
+          args: Prisma.SumUpPaymentFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SumUpPaymentPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.SumUpPaymentFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SumUpPaymentPayload>
+        }
+        findMany: {
+          args: Prisma.SumUpPaymentFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SumUpPaymentPayload>[]
+        }
+        create: {
+          args: Prisma.SumUpPaymentCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SumUpPaymentPayload>
+        }
+        createMany: {
+          args: Prisma.SumUpPaymentCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.SumUpPaymentCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SumUpPaymentPayload>[]
+        }
+        delete: {
+          args: Prisma.SumUpPaymentDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SumUpPaymentPayload>
+        }
+        update: {
+          args: Prisma.SumUpPaymentUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SumUpPaymentPayload>
+        }
+        deleteMany: {
+          args: Prisma.SumUpPaymentDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.SumUpPaymentUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.SumUpPaymentUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SumUpPaymentPayload>[]
+        }
+        upsert: {
+          args: Prisma.SumUpPaymentUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SumUpPaymentPayload>
+        }
+        aggregate: {
+          args: Prisma.SumUpPaymentAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateSumUpPayment>
+        }
+        groupBy: {
+          args: Prisma.SumUpPaymentGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.SumUpPaymentGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.SumUpPaymentCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.SumUpPaymentCountAggregateOutputType> | number
+        }
+      }
+    }
   }
 } & {
   other: {
@@ -939,7 +1014,8 @@ export const OrderScalarFieldEnum = {
   id: 'id',
   createdAt: 'createdAt',
   finishedAt: 'finishedAt',
-  totalPrice: 'totalPrice'
+  totalPrice: 'totalPrice',
+  paymentMethod: 'paymentMethod'
 } as const
 
 export type OrderScalarFieldEnum = (typeof OrderScalarFieldEnum)[keyof typeof OrderScalarFieldEnum]
@@ -956,6 +1032,17 @@ export const OrderItemScalarFieldEnum = {
 } as const
 
 export type OrderItemScalarFieldEnum = (typeof OrderItemScalarFieldEnum)[keyof typeof OrderItemScalarFieldEnum]
+
+
+export const SumUpPaymentScalarFieldEnum = {
+  id: 'id',
+  paymentId: 'paymentId',
+  status: 'status',
+  amount: 'amount',
+  orderId: 'orderId'
+} as const
+
+export type SumUpPaymentScalarFieldEnum = (typeof SumUpPaymentScalarFieldEnum)[keyof typeof SumUpPaymentScalarFieldEnum]
 
 
 export const SortOrder = {
@@ -1012,6 +1099,13 @@ export type BooleanFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel,
  * Reference to a field of type 'DateTime'
  */
 export type DateTimeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'DateTime'>
+    
+
+
+/**
+ * Reference to a field of type 'PaymentStatus'
+ */
+export type EnumPaymentStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'PaymentStatus'>
     
 
 
@@ -1137,6 +1231,7 @@ export type GlobalOmitConfig = {
   floatingOrder?: Prisma.FloatingOrderOmit
   order?: Prisma.OrderOmit
   orderItem?: Prisma.OrderItemOmit
+  sumUpPayment?: Prisma.SumUpPaymentOmit
 }
 
 /* Types for Logging */

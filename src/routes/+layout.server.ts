@@ -25,6 +25,9 @@ export const load: LayoutServerLoad = async ({ locals }) => {
 
 	try {
 		const config: App.Config = JSON.parse(await fs.readFile('config.json', 'utf-8'));
+		if (config.cardPayment?.sumUpIntegration?.accessToken) {
+			config.cardPayment.sumUpIntegration.accessToken = '__UNCHANGED__';
+		}
 		return { categories, config };
 	} catch (error) {
 		console.error('Error reading config.json:', error);
@@ -35,6 +38,9 @@ export const load: LayoutServerLoad = async ({ locals }) => {
 				before: '€',
 				after: '',
 				digits: 2
+			},
+			cardPayment: {
+				enabled: false
 			}
 		};
 		return { categories, config };

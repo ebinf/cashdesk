@@ -65,11 +65,13 @@ model FloatingOrder {
 }
 
 model Order {
-  id         Int         @id @default(autoincrement())
-  createdAt  DateTime    @default(now())
-  finishedAt DateTime?
-  items      OrderItem[]
-  totalPrice Int
+  id            Int            @id @default(autoincrement())
+  createdAt     DateTime       @default(now())
+  finishedAt    DateTime?
+  items         OrderItem[]
+  totalPrice    Int
+  paymentMethod String         @default("cash")
+  sumUpPayments SumUpPayment[]
 }
 
 model OrderItem {
@@ -84,4 +86,23 @@ model OrderItem {
   variantId       Int?
   amount          Int
   done            Boolean        @default(false)
+}
+
+enum PaymentStatus {
+  waitingForTerminal
+  inProcess
+  pending
+  completed
+  failed
+  cancelled
+  error
+}
+
+model SumUpPayment {
+  id        Int           @id @default(autoincrement())
+  paymentId String?
+  status    PaymentStatus
+  amount    Int
+  orderId   Int?
+  order     Order?        @relation(fields: [orderId], references: [id])
 }

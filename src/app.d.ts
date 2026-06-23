@@ -9,12 +9,24 @@ declare global {
 		// interface Platform {}
 
 		interface Config {
-			title: string?;
-			itemsPerRow: number?;
+			title?: string;
+			itemsPerRow?: number;
 			currency: {
 				before: string;
 				after: string;
 				digits: number;
+			};
+			cardPayment?: {
+				enabled?: boolean;
+				sumUpIntegration?:
+					| {
+							enabled: true;
+							accessToken: string;
+							merchantCode: string;
+							readerId: string;
+							currency: string;
+					  }
+					| ({ enabled: false } & Record<string, never>);
 			};
 		}
 	}

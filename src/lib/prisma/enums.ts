@@ -23,3 +23,16 @@ export const Color = {
 } as const
 
 export type Color = (typeof Color)[keyof typeof Color]
+
+
+export const PaymentStatus = {
+  waitingForTerminal: 'waitingForTerminal',
+  inProcess: 'inProcess',
+  pending: 'pending',
+  completed: 'completed',
+  failed: 'failed',
+  cancelled: 'cancelled',
+  error: 'error'
+} as const
+
+export type PaymentStatus = (typeof PaymentStatus)[keyof typeof PaymentStatus]

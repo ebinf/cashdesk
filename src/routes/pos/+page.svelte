@@ -27,6 +27,7 @@
 	import { onNavigate } from '$app/navigation';
 	import { browser } from '$app/env';
 	import SettingsModal from './SettingsModal.svelte';
+	import CardPayModal from './CardPayModal.svelte';
 
 	interface Props {
 		data: PageData;
@@ -42,6 +43,7 @@
 			: null
 	);
 	let payModalOpen: boolean = $state(false);
+	let cardPayModalOpen: boolean = $state(false);
 	let cancelModalOpen: boolean = $state(false);
 
 	let floatingOrderId: number | null = null;
@@ -158,6 +160,33 @@
 		currentOrder = new Map(currentOrder);
 	};
 
+	async function doSubmitOrder(paymentMethod: string) {
+		let floatingOrderSubmitResult: null | boolean = null;
+		if (floatingOrderId) {
+			floatingOrderSubmitResult = await submitFloatingOrder({
+				floatingOrderId: floatingOrderId,
+				paymentMethod,
+				items: Array.from(currentOrder.entries()).map(([key, amount]) => {
+					const [productId, variantId] = key.split('_').map(Number);
+					return { productId, variantId, amount };
+				}),
+				total: totalPrice
+			});
+		}
+		if (!floatingOrderId || floatingOrderSubmitResult === false) {
+			await submitOrder({
+				items: Array.from(currentOrder.entries()).map(([key, amount]) => {
+					const [productId, variantId] = key.split('_').map(Number);
+					return { productId, variantId, amount };
+				}),
+				paymentMethod,
+				total: totalPrice
+			});
+		}
+		resetFloatingOrder();
+		currentOrder = new Map();
+	}
+
 	let now: Date = $state(new Date());
 	onMount(() => {
 		const interval = setInterval(() => {
@@ -232,14 +261,35 @@
 				/>
 			</div>
 			<div class="flex flex-col gap-4 p-4">
-				<button
-					onclick={() => (payModalOpen = true)}
-					disabled={currentOrder.size === 0}
-					type="button"
-					class="w-full rounded-md bg-gray-600 px-3.5 py-10 text-2xl font-semibold text-white shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600 disabled:cursor-not-allowed disabled:bg-gray-400"
-				>
-					Abschließen & Bezahlen
-				</button>
+				{#if data.config.cardPayment?.enabled}
+					<div class="flex flex-row items-stretch justify-evenly gap-4">
+						<button
+							onclick={() => (payModalOpen = true)}
+							disabled={currentOrder.size === 0}
+							type="button"
+							class="w-full grow rounded-md bg-gray-600 px-3.5 py-10 text-2xl font-semibold text-white shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600 disabled:cursor-not-allowed disabled:bg-gray-400"
+						>
+							Bar
+						</button>
+						<button
+							onclick={() => (cardPayModalOpen = true)}
+							disabled={currentOrder.size === 0}
+							type="button"
+							class="shrink-0 rounded-md bg-blue-600 px-3.5 py-10 text-2xl font-semibold text-white shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 disabled:cursor-not-allowed disabled:bg-blue-300"
+						>
+							Karte
+						</button>
+					</div>
+				{:else}
+					<button
+						onclick={() => (payModalOpen = true)}
+						disabled={currentOrder.size === 0}
+						type="button"
+						class="w-full rounded-md bg-gray-600 px-3.5 py-10 text-2xl font-semibold text-white shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600 disabled:cursor-not-allowed disabled:bg-gray-400"
+					>
+						Abschließen & Bezahlen
+					</button>
+				{/if}
 				<button
 					onclick={() => (cancelModalOpen = true)}
 					disabled={currentOrder.size === 0}
@@ -275,34 +325,23 @@
 		<PayModal
 			config={data.config}
 			{totalPrice}
-			open={payModalOpen}
+			bind:open={payModalOpen}
 			onpayed={async () => {
-				let floatingOrderSubmitResult: null | boolean = null;
-				if (floatingOrderId) {
-					floatingOrderSubmitResult = await submitFloatingOrder({
-						floatingOrderId: floatingOrderId,
-						items: Array.from(currentOrder.entries()).map(([key, amount]) => {
-							const [productId, variantId] = key.split('_').map(Number);
-							return { productId, variantId, amount };
-						}),
-						total: totalPrice
-					});
-				}
-				if (!floatingOrderId || floatingOrderSubmitResult === false) {
-					await submitOrder({
-						items: Array.from(currentOrder.entries()).map(([key, amount]) => {
-							const [productId, variantId] = key.split('_').map(Number);
-							return { productId, variantId, amount };
-						}),
-						total: totalPrice
-					});
-				}
-				resetFloatingOrder();
-				currentOrder = new Map();
-				payModalOpen = false;
+				await doSubmitOrder('cash');
 			}}
-			oncancel={() => (payModalOpen = false)}
+			oncancel={() => {}}
 		/>
+		{#if data.config.cardPayment?.enabled}
+			<CardPayModal
+				config={data.config}
+				{totalPrice}
+				bind:open={cardPayModalOpen}
+				onpayed={async () => {
+					await doSubmitOrder('card');
+				}}
+				oncancel={() => {}}
+			/>
+		{/if}
 	</div>
 	<div class="-mt-5 -mr-5 -mb-5 w-1/3 space-y-4 overflow-y-auto p-5">
 		{#each await getActiveOrders() as order (order.id)}

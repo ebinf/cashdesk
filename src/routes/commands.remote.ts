@@ -147,6 +147,7 @@ export const updateItemAmountInFloatingOrder = command(
 export const submitOrder = command(
 	v.object({
 		total: v.number(),
+		paymentMethod: v.string(),
 		items: v.array(
 			v.object({
 				productId: v.number(),
@@ -159,6 +160,7 @@ export const submitOrder = command(
 		await client.order.create({
 			data: {
 				totalPrice: data.total,
+				paymentMethod: data.paymentMethod,
 				items: {
 					createMany: {
 						data: data.items.map((item) => ({
@@ -179,6 +181,7 @@ export const submitFloatingOrder = command(
 	v.object({
 		floatingOrderId: v.number(),
 		total: v.number(),
+		paymentMethod: v.string(),
 		items: v.array(
 			v.object({
 				productId: v.number(),
@@ -194,6 +197,7 @@ export const submitFloatingOrder = command(
 		const order = await client.order.create({
 			data: {
 				totalPrice: data.total,
+				paymentMethod: data.paymentMethod,
 				items: {}
 			}
 		});

@@ -9,7 +9,7 @@
 		oncancel: () => void;
 	}
 
-	let { open, totalPrice, config, onpayed, oncancel }: Props = $props();
+	let { open = $bindable(false), totalPrice, config, onpayed, oncancel }: Props = $props();
 
 	let payed: number = $state(0);
 	let paymentLeft: number = $derived(totalPrice - payed);
@@ -20,24 +20,24 @@
 	$effect(() => {
 		let smartPaymentOptionsSet = new Set<number>();
 		paymentOptions
-			.filter((option) => option * 100 < totalPrice)
+			.filter((option) => option * 10 ** config.currency.digits < totalPrice)
 			.forEach((option) => {
-				let priceDifference = totalPrice - option * 100;
-				let current = option * 100;
+				let priceDifference = totalPrice - option * 10 ** config.currency.digits;
+				let current = option * 10 ** config.currency.digits;
 				while (priceDifference > 0) {
-					priceDifference -= option * 100;
-					current += option * 100;
+					priceDifference -= option * 10 ** config.currency.digits;
+					current += option * 10 ** config.currency.digits;
 				}
-				smartPaymentOptionsSet.add(current * 100);
+				smartPaymentOptionsSet.add(current * 10 ** config.currency.digits);
 			});
 		paymentOptions.forEach((option) => {
-			smartPaymentOptionsSet.delete(option * 100);
+			smartPaymentOptionsSet.delete(option * 10 ** config.currency.digits);
 		}); // Remove exact payment options to avoid confusion
-		smartPaymentOptionsSet.add(totalPrice * 100); // Always include the total price as an option
+		smartPaymentOptionsSet.add(totalPrice * 10 ** config.currency.digits); // Always include the total price as an option
 		smartPaymentOptionsSet.delete(0); // Remove zero to avoid confusion
 		smartPaymentOptions = Array.from(smartPaymentOptionsSet)
 			.sort((a, b) => a - b)
-			.map((value) => value / 100);
+			.map((value) => value / 10 ** config.currency.digits);
 	});
 </script>
 
@@ -51,7 +51,7 @@
 					<div class="grid grid-cols-2 gap-4">
 						{#each [50, 20, 10, 5] as amount}
 							<button
-								onclick={() => (payed += amount * 100)}
+								onclick={() => (payed += amount * 10 ** config.currency.digits)}
 								disabled={submitting}
 								type="button"
 								class="aspect-2/1 overflow-hidden shadow-xl"
@@ -62,7 +62,7 @@
 									class="h-full w-full object-cover"
 								/>
 								<span class="sr-only">
-									<FormattedCurrency amount={amount * 100} {config} />
+									<FormattedCurrency amount={amount * 10 ** config.currency.digits} {config} />
 								</span>
 							</button>
 						{/each}
@@ -70,7 +70,7 @@
 					<div class="mt-4 grid grid-cols-4 gap-4">
 						{#each [2, 1, 0.5, 0.2, 0.1, 0.05, 0.02, 0.01] as amount}
 							<button
-								onclick={() => (payed += amount * 100)}
+								onclick={() => (payed += amount * 10 ** config.currency.digits)}
 								disabled={submitting}
 								type="button"
 								class="aspect-square overflow-hidden rounded-full shadow-xl"
@@ -81,7 +81,7 @@
 									class="h-full w-full object-cover"
 								/>
 								<span class="sr-only">
-									<FormattedCurrency amount={amount * 100} {config} />
+									<FormattedCurrency amount={amount * 10 ** config.currency.digits} {config} />
 								</span>
 							</button>
 						{/each}
@@ -132,7 +132,7 @@
 				<div class="flex flex-col gap-4">
 					<button
 						type="button"
-						disabled={Math.round(paymentLeft * 100) > 0 || submitting}
+						disabled={Math.round(paymentLeft * 10 ** config.currency.digits) > 0 || submitting}
 						onclick={async () => {
 							submitting = true;
 							await onpayed();
@@ -168,7 +168,13 @@
 						{/if}
 					</button>
 					<button
-						onclick={oncancel}
+						onclick={async () => {
+							submitting = true;
+							await oncancel();
+							open = false;
+							payed = 0;
+							submitting = false;
+						}}
 						disabled={submitting}
 						type="button"
 						class="w-full rounded-md border border-gray-300 bg-gray-50 px-3.5 py-4 text-base font-semibold text-gray-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600 disabled:cursor-not-allowed disabled:bg-gray-200"

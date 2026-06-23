@@ -47,3 +47,8 @@ export type Order = Prisma.OrderModel
  * 
  */
 export type OrderItem = Prisma.OrderItemModel
+/**
+ * Model SumUpPayment
+ * 
+ */
+export type SumUpPayment = Prisma.SumUpPaymentModel

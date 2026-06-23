@@ -16,6 +16,7 @@
 	import ProductModal from './ProductModal.svelte';
 	import TrashBinModal from './TrashBinModal.svelte';
 	import SettingsModal from './SettingsModal.svelte';
+	import CardPaymentModal from './CardPaymentModal.svelte';
 
 	let { data }: { data: PageData } = $props();
 
@@ -36,6 +37,7 @@
 	);
 	let trashBinOpen = $state(false);
 	let settingsOpen = $state(false);
+	let cardPaymentOpen = $state(false);
 </script>
 
 <div class="relative flex h-full w-full flex-col overflow-hidden rounded-xl bg-gray-50 shadow-2xl">
@@ -121,6 +123,30 @@
 				</svg>
 
 				Einstellungen
+			</button>
+			<button
+				type="button"
+				class="flex flex-row gap-x-2 rounded-md border border-gray-300 bg-gray-50 px-3.5 py-4 text-base font-semibold text-gray-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600 disabled:cursor-not-allowed disabled:bg-gray-200"
+				onclick={() => {
+					cardPaymentOpen = true;
+				}}
+			>
+				<svg
+					xmlns="http://www.w3.org/2000/svg"
+					fill="none"
+					viewBox="0 0 24 24"
+					stroke-width="1.5"
+					stroke="currentColor"
+					class="size-5"
+				>
+					<path
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 0 0 2.25-2.25V6.75A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25v10.5A2.25 2.25 0 0 0 4.5 19.5Z"
+					/>
+				</svg>
+
+				Kartenzahlung
 			</button>
 			<button
 				type="button"
@@ -383,4 +409,5 @@
 	/>
 	<TrashBinModal config={data.config} categories={data.categories} bind:open={trashBinOpen} />
 	<SettingsModal config={data.config} bind:open={settingsOpen} />
+	<CardPaymentModal config={data.config} bind:open={cardPaymentOpen} />
 </div>

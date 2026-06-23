@@ -16,11 +16,44 @@ export const editSettings = command(
 		})
 	}),
 	async (data) => {
-		await fs.writeFile('config.json', JSON.stringify(data, null, 2));
+		const currentConfig: App.Config = JSON.parse(await fs.readFile('config.json', 'utf-8'));
+		await fs.writeFile('config.json', JSON.stringify({ ...currentConfig, ...data }, null, 2));
 		events.emit('update', 'catalogue');
 		return true;
 	}
 );
+
+export const editCardPayment = command(
+	v.object({
+		enabled: v.boolean(),
+		sumUpIntegration: v.object({
+			enabled: v.boolean(),
+			accessToken: v.string(),
+			merchantCode: v.string(),
+			readerId: v.string(),
+			currency: v.string()
+		})
+	}),
+	async (data) => {
+		const currentConfig: App.Config = JSON.parse(await fs.readFile('config.json', 'utf-8'));
+		if (data.sumUpIntegration.enabled) {
+			if (!data.sumUpIntegration.accessToken || !data.sumUpIntegration.merchantCode) {
+				data.sumUpIntegration.enabled = false;
+			}
+			if (data.sumUpIntegration.accessToken === '__UNCHANGED__') {
+				data.sumUpIntegration.accessToken =
+					currentConfig.cardPayment?.sumUpIntegration?.accessToken ?? '';
+			}
+		}
+		await fs.writeFile(
+			'config.json',
+			JSON.stringify({ ...currentConfig, cardPayment: data }, null, 2)
+		);
+		events.emit('update', 'catalogue');
+		return true;
+	}
+);
+
 export const addCategory = command(
 	v.object({
 		name: v.string(),

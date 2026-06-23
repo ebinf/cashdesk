@@ -20,7 +20,13 @@ export const GET: RequestHandler = async ({}) => {
 		start(controller) {
 			listeners.push(controller);
 			setTimeout(() => {
-				controller.enqueue('data: connected\n\n');
+				try {
+					controller.enqueue('data: connected\n\n');
+				} catch (e) {
+					if (e instanceof TypeError) {
+						delete listeners[listeners.indexOf(controller)];
+					}
+				}
 			}, 200);
 		},
 		cancel() {}

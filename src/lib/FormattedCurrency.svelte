@@ -9,7 +9,8 @@
 </script>
 
 {#if config.currency.before}{config.currency.before}&#8239;{/if}{#if showSign && amount > 0}+{/if}{(
-	amount / 100
+	amount /
+	10 ** config.currency.digits
 ).toLocaleString(undefined, {
 	minimumFractionDigits: config.currency.digits,
 	maximumFractionDigits: config.currency.digits

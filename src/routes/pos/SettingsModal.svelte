@@ -79,7 +79,7 @@
 					href="/settings"
 					class="w-full rounded-md bg-gray-600 px-3.5 py-4.5 text-center text-base font-semibold text-white shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600 disabled:cursor-not-allowed disabled:bg-gray-400"
 				>
-					Produkte bearbeiten
+					Einstellungen
 				</a>
 				<button
 					type="button"

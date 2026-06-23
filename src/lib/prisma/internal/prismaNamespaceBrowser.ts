@@ -56,7 +56,8 @@ export const ModelName = {
   Variant: 'Variant',
   FloatingOrder: 'FloatingOrder',
   Order: 'Order',
-  OrderItem: 'OrderItem'
+  OrderItem: 'OrderItem',
+  SumUpPayment: 'SumUpPayment'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -122,7 +123,8 @@ export const OrderScalarFieldEnum = {
   id: 'id',
   createdAt: 'createdAt',
   finishedAt: 'finishedAt',
-  totalPrice: 'totalPrice'
+  totalPrice: 'totalPrice',
+  paymentMethod: 'paymentMethod'
 } as const
 
 export type OrderScalarFieldEnum = (typeof OrderScalarFieldEnum)[keyof typeof OrderScalarFieldEnum]
@@ -139,6 +141,17 @@ export const OrderItemScalarFieldEnum = {
 } as const
 
 export type OrderItemScalarFieldEnum = (typeof OrderItemScalarFieldEnum)[keyof typeof OrderItemScalarFieldEnum]
+
+
+export const SumUpPaymentScalarFieldEnum = {
+  id: 'id',
+  paymentId: 'paymentId',
+  status: 'status',
+  amount: 'amount',
+  orderId: 'orderId'
+} as const
+
+export type SumUpPaymentScalarFieldEnum = (typeof SumUpPaymentScalarFieldEnum)[keyof typeof SumUpPaymentScalarFieldEnum]
 
 
 export const SortOrder = {

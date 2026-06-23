@@ -9,8 +9,8 @@
 
 	let { open = $bindable(false), config }: Props = $props();
 
-	let title: string | null = $derived(config.title);
-	let itemsPerRow: number | null = $derived(config.itemsPerRow);
+	let title: string | null | undefined = $derived(config.title);
+	let itemsPerRow: number | null | undefined = $derived(config.itemsPerRow);
 	let currencyPrefix: string | null = $derived(config.currency.before);
 	let currencyDecimals: number | null = $derived(config.currency.digits);
 	let currencySuffix: string | null = $derived(config.currency.after);
