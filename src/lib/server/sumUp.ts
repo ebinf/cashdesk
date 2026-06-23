@@ -1,7 +1,10 @@
+import { building } from '$app/env';
 import SumUp from '@sumup/sdk';
 import fs from 'node:fs/promises';
 
 export const getSumUp = async () => {
+	if (building) return undefined;
+
 	const currentConfig: App.Config = JSON.parse(await fs.readFile('config.json', 'utf-8'));
 
 	if (
