@@ -5,6 +5,7 @@ import { Color, PaymentStatus } from '$lib/prisma/enums';
 import events from '$lib/server/events';
 import fs from 'node:fs/promises';
 import { CONFIG_PATH, DATABASE_URL } from '$lib/server/environment';
+import { defaultSettings } from '$lib/defaultSettings';
 
 export const editSettings = command(
 	v.object({
@@ -22,7 +23,7 @@ export const editSettings = command(
 			await fs.writeFile(CONFIG_PATH, JSON.stringify({ ...currentConfig, ...data }, null, 2));
 		} catch (e: any) {
 			if (e.code && e.code === 'ENOENT') {
-				await fs.writeFile(CONFIG_PATH, JSON.stringify(data, null, 2));
+				await fs.writeFile(CONFIG_PATH, JSON.stringify({ ...defaultSettings, ...data }, null, 2));
 			} else {
 				console.error('Error editing settings:', e);
 				return false;
@@ -45,20 +46,32 @@ export const editCardPayment = command(
 		})
 	}),
 	async (data) => {
-		const currentConfig: App.Config = JSON.parse(await fs.readFile(CONFIG_PATH, 'utf-8'));
-		if (data.sumUpIntegration.accessToken === '__UNCHANGED__') {
-			data.sumUpIntegration.accessToken =
-				currentConfig.cardPayment?.sumUpIntegration?.accessToken ?? '';
-		}
 		if (data.sumUpIntegration.enabled) {
 			if (!data.sumUpIntegration.accessToken || !data.sumUpIntegration.merchantCode) {
 				data.sumUpIntegration.enabled = false;
 			}
 		}
-		await fs.writeFile(
-			CONFIG_PATH,
-			JSON.stringify({ ...currentConfig, cardPayment: data }, null, 2)
-		);
+		try {
+			const currentConfig: App.Config = JSON.parse(await fs.readFile(CONFIG_PATH, 'utf-8'));
+			if (data.sumUpIntegration.accessToken === '__UNCHANGED__') {
+				data.sumUpIntegration.accessToken =
+					currentConfig.cardPayment?.sumUpIntegration?.accessToken ?? '';
+			}
+			await fs.writeFile(
+				CONFIG_PATH,
+				JSON.stringify({ ...currentConfig, cardPayment: data }, null, 2)
+			);
+		} catch (e: any) {
+			if (e.code && e.code === 'ENOENT') {
+				await fs.writeFile(
+					CONFIG_PATH,
+					JSON.stringify({ ...defaultSettings, cardPayment: data }, null, 2)
+				);
+			} else {
+				console.error('Error editing settings:', e);
+				return false;
+			}
+		}
 		events.emit('update', 'catalogue');
 		return true;
 	}
@@ -241,7 +254,8 @@ export const addProduct = command(
 		color: v.optional(v.enum(Color)),
 		price: v.number(),
 		categoryId: v.number(),
-		hideInOrders: v.optional(v.boolean())
+		hideInOrders: v.optional(v.boolean()),
+		variantNameOverridesName: v.optional(v.boolean())
 	}),
 	async (data) => {
 		const largestOrder = await client.product.findFirst({
@@ -263,7 +277,8 @@ export const addProduct = command(
 				price: data.price,
 				categoryId: data.categoryId,
 				order: (largestOrder?.order ?? 0) + 1,
-				hideInOrders: data.hideInOrders ?? false
+				hideInOrders: data.hideInOrders ?? false,
+				variantNameOverridesName: data.variantNameOverridesName ?? false
 			}
 		});
 		events.emit('update', 'catalogue');
@@ -278,7 +293,8 @@ export const editProduct = command(
 		color: v.optional(v.enum(Color)),
 		price: v.number(),
 		categoryId: v.number(),
-		hideInOrders: v.optional(v.boolean())
+		hideInOrders: v.optional(v.boolean()),
+		variantNameOverridesName: v.optional(v.boolean())
 	}),
 	async (data) => {
 		const product = await client.product.findUnique({
@@ -312,7 +328,8 @@ export const editProduct = command(
 					color: data.color ?? null,
 					price: data.price,
 					categoryId: data.categoryId,
-					hideInOrders: data.hideInOrders ?? false
+					hideInOrders: data.hideInOrders ?? false,
+					variantNameOverridesName: data.variantNameOverridesName ?? false
 				}
 			});
 		} else {
@@ -324,6 +341,7 @@ export const editProduct = command(
 					categoryId: data.categoryId,
 					order: product.order,
 					hideInOrders: data.hideInOrders ?? false,
+					variantNameOverridesName: data.variantNameOverridesName ?? false,
 					variants: {
 						create: product.variants.map((v) => ({
 							name: v.name,

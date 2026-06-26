@@ -48,6 +48,7 @@ export type ProductMinAggregateOutputType = {
   price: number | null
   color: $Enums.Color | null
   hideInOrders: boolean | null
+  variantNameOverridesName: boolean | null
   isArchived: boolean | null
 }
 
@@ -59,6 +60,7 @@ export type ProductMaxAggregateOutputType = {
   price: number | null
   color: $Enums.Color | null
   hideInOrders: boolean | null
+  variantNameOverridesName: boolean | null
   isArchived: boolean | null
 }
 
@@ -70,6 +72,7 @@ export type ProductCountAggregateOutputType = {
   price: number
   color: number
   hideInOrders: number
+  variantNameOverridesName: number
   isArchived: number
   _all: number
 }
@@ -97,6 +100,7 @@ export type ProductMinAggregateInputType = {
   price?: true
   color?: true
   hideInOrders?: true
+  variantNameOverridesName?: true
   isArchived?: true
 }
 
@@ -108,6 +112,7 @@ export type ProductMaxAggregateInputType = {
   price?: true
   color?: true
   hideInOrders?: true
+  variantNameOverridesName?: true
   isArchived?: true
 }
 
@@ -119,6 +124,7 @@ export type ProductCountAggregateInputType = {
   price?: true
   color?: true
   hideInOrders?: true
+  variantNameOverridesName?: true
   isArchived?: true
   _all?: true
 }
@@ -217,6 +223,7 @@ export type ProductGroupByOutputType = {
   price: number
   color: $Enums.Color | null
   hideInOrders: boolean
+  variantNameOverridesName: boolean
   isArchived: boolean
   _count: ProductCountAggregateOutputType | null
   _avg: ProductAvgAggregateOutputType | null
@@ -251,6 +258,7 @@ export type ProductWhereInput = {
   price?: Prisma.IntFilter<"Product"> | number
   color?: Prisma.EnumColorNullableFilter<"Product"> | $Enums.Color | null
   hideInOrders?: Prisma.BoolFilter<"Product"> | boolean
+  variantNameOverridesName?: Prisma.BoolFilter<"Product"> | boolean
   isArchived?: Prisma.BoolFilter<"Product"> | boolean
   category?: Prisma.XOR<Prisma.CategoryNullableScalarRelationFilter, Prisma.CategoryWhereInput> | null
   variants?: Prisma.VariantListRelationFilter
@@ -265,6 +273,7 @@ export type ProductOrderByWithRelationInput = {
   price?: Prisma.SortOrder
   color?: Prisma.SortOrderInput | Prisma.SortOrder
   hideInOrders?: Prisma.SortOrder
+  variantNameOverridesName?: Prisma.SortOrder
   isArchived?: Prisma.SortOrder
   category?: Prisma.CategoryOrderByWithRelationInput
   variants?: Prisma.VariantOrderByRelationAggregateInput
@@ -282,6 +291,7 @@ export type ProductWhereUniqueInput = Prisma.AtLeast<{
   price?: Prisma.IntFilter<"Product"> | number
   color?: Prisma.EnumColorNullableFilter<"Product"> | $Enums.Color | null
   hideInOrders?: Prisma.BoolFilter<"Product"> | boolean
+  variantNameOverridesName?: Prisma.BoolFilter<"Product"> | boolean
   isArchived?: Prisma.BoolFilter<"Product"> | boolean
   category?: Prisma.XOR<Prisma.CategoryNullableScalarRelationFilter, Prisma.CategoryWhereInput> | null
   variants?: Prisma.VariantListRelationFilter
@@ -296,6 +306,7 @@ export type ProductOrderByWithAggregationInput = {
   price?: Prisma.SortOrder
   color?: Prisma.SortOrderInput | Prisma.SortOrder
   hideInOrders?: Prisma.SortOrder
+  variantNameOverridesName?: Prisma.SortOrder
   isArchived?: Prisma.SortOrder
   _count?: Prisma.ProductCountOrderByAggregateInput
   _avg?: Prisma.ProductAvgOrderByAggregateInput
@@ -315,6 +326,7 @@ export type ProductScalarWhereWithAggregatesInput = {
   price?: Prisma.IntWithAggregatesFilter<"Product"> | number
   color?: Prisma.EnumColorNullableWithAggregatesFilter<"Product"> | $Enums.Color | null
   hideInOrders?: Prisma.BoolWithAggregatesFilter<"Product"> | boolean
+  variantNameOverridesName?: Prisma.BoolWithAggregatesFilter<"Product"> | boolean
   isArchived?: Prisma.BoolWithAggregatesFilter<"Product"> | boolean
 }
 
@@ -324,6 +336,7 @@ export type ProductCreateInput = {
   price: number
   color?: $Enums.Color | null
   hideInOrders?: boolean
+  variantNameOverridesName?: boolean
   isArchived?: boolean
   category?: Prisma.CategoryCreateNestedOneWithoutProductsInput
   variants?: Prisma.VariantCreateNestedManyWithoutProductInput
@@ -338,6 +351,7 @@ export type ProductUncheckedCreateInput = {
   price: number
   color?: $Enums.Color | null
   hideInOrders?: boolean
+  variantNameOverridesName?: boolean
   isArchived?: boolean
   variants?: Prisma.VariantUncheckedCreateNestedManyWithoutProductInput
   orderItems?: Prisma.OrderItemUncheckedCreateNestedManyWithoutProductInput
@@ -349,6 +363,7 @@ export type ProductUpdateInput = {
   price?: Prisma.IntFieldUpdateOperationsInput | number
   color?: Prisma.NullableEnumColorFieldUpdateOperationsInput | $Enums.Color | null
   hideInOrders?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  variantNameOverridesName?: Prisma.BoolFieldUpdateOperationsInput | boolean
   isArchived?: Prisma.BoolFieldUpdateOperationsInput | boolean
   category?: Prisma.CategoryUpdateOneWithoutProductsNestedInput
   variants?: Prisma.VariantUpdateManyWithoutProductNestedInput
@@ -363,6 +378,7 @@ export type ProductUncheckedUpdateInput = {
   price?: Prisma.IntFieldUpdateOperationsInput | number
   color?: Prisma.NullableEnumColorFieldUpdateOperationsInput | $Enums.Color | null
   hideInOrders?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  variantNameOverridesName?: Prisma.BoolFieldUpdateOperationsInput | boolean
   isArchived?: Prisma.BoolFieldUpdateOperationsInput | boolean
   variants?: Prisma.VariantUncheckedUpdateManyWithoutProductNestedInput
   orderItems?: Prisma.OrderItemUncheckedUpdateManyWithoutProductNestedInput
@@ -376,6 +392,7 @@ export type ProductCreateManyInput = {
   price: number
   color?: $Enums.Color | null
   hideInOrders?: boolean
+  variantNameOverridesName?: boolean
   isArchived?: boolean
 }
 
@@ -385,6 +402,7 @@ export type ProductUpdateManyMutationInput = {
   price?: Prisma.IntFieldUpdateOperationsInput | number
   color?: Prisma.NullableEnumColorFieldUpdateOperationsInput | $Enums.Color | null
   hideInOrders?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  variantNameOverridesName?: Prisma.BoolFieldUpdateOperationsInput | boolean
   isArchived?: Prisma.BoolFieldUpdateOperationsInput | boolean
 }
 
@@ -396,6 +414,7 @@ export type ProductUncheckedUpdateManyInput = {
   price?: Prisma.IntFieldUpdateOperationsInput | number
   color?: Prisma.NullableEnumColorFieldUpdateOperationsInput | $Enums.Color | null
   hideInOrders?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  variantNameOverridesName?: Prisma.BoolFieldUpdateOperationsInput | boolean
   isArchived?: Prisma.BoolFieldUpdateOperationsInput | boolean
 }
 
@@ -417,6 +436,7 @@ export type ProductCountOrderByAggregateInput = {
   price?: Prisma.SortOrder
   color?: Prisma.SortOrder
   hideInOrders?: Prisma.SortOrder
+  variantNameOverridesName?: Prisma.SortOrder
   isArchived?: Prisma.SortOrder
 }
 
@@ -435,6 +455,7 @@ export type ProductMaxOrderByAggregateInput = {
   price?: Prisma.SortOrder
   color?: Prisma.SortOrder
   hideInOrders?: Prisma.SortOrder
+  variantNameOverridesName?: Prisma.SortOrder
   isArchived?: Prisma.SortOrder
 }
 
@@ -446,6 +467,7 @@ export type ProductMinOrderByAggregateInput = {
   price?: Prisma.SortOrder
   color?: Prisma.SortOrder
   hideInOrders?: Prisma.SortOrder
+  variantNameOverridesName?: Prisma.SortOrder
   isArchived?: Prisma.SortOrder
 }
 
@@ -549,6 +571,7 @@ export type ProductCreateWithoutCategoryInput = {
   price: number
   color?: $Enums.Color | null
   hideInOrders?: boolean
+  variantNameOverridesName?: boolean
   isArchived?: boolean
   variants?: Prisma.VariantCreateNestedManyWithoutProductInput
   orderItems?: Prisma.OrderItemCreateNestedManyWithoutProductInput
@@ -561,6 +584,7 @@ export type ProductUncheckedCreateWithoutCategoryInput = {
   price: number
   color?: $Enums.Color | null
   hideInOrders?: boolean
+  variantNameOverridesName?: boolean
   isArchived?: boolean
   variants?: Prisma.VariantUncheckedCreateNestedManyWithoutProductInput
   orderItems?: Prisma.OrderItemUncheckedCreateNestedManyWithoutProductInput
@@ -602,6 +626,7 @@ export type ProductScalarWhereInput = {
   price?: Prisma.IntFilter<"Product"> | number
   color?: Prisma.EnumColorNullableFilter<"Product"> | $Enums.Color | null
   hideInOrders?: Prisma.BoolFilter<"Product"> | boolean
+  variantNameOverridesName?: Prisma.BoolFilter<"Product"> | boolean
   isArchived?: Prisma.BoolFilter<"Product"> | boolean
 }
 
@@ -611,6 +636,7 @@ export type ProductCreateWithoutVariantsInput = {
   price: number
   color?: $Enums.Color | null
   hideInOrders?: boolean
+  variantNameOverridesName?: boolean
   isArchived?: boolean
   category?: Prisma.CategoryCreateNestedOneWithoutProductsInput
   orderItems?: Prisma.OrderItemCreateNestedManyWithoutProductInput
@@ -624,6 +650,7 @@ export type ProductUncheckedCreateWithoutVariantsInput = {
   price: number
   color?: $Enums.Color | null
   hideInOrders?: boolean
+  variantNameOverridesName?: boolean
   isArchived?: boolean
   orderItems?: Prisma.OrderItemUncheckedCreateNestedManyWithoutProductInput
 }
@@ -650,6 +677,7 @@ export type ProductUpdateWithoutVariantsInput = {
   price?: Prisma.IntFieldUpdateOperationsInput | number
   color?: Prisma.NullableEnumColorFieldUpdateOperationsInput | $Enums.Color | null
   hideInOrders?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  variantNameOverridesName?: Prisma.BoolFieldUpdateOperationsInput | boolean
   isArchived?: Prisma.BoolFieldUpdateOperationsInput | boolean
   category?: Prisma.CategoryUpdateOneWithoutProductsNestedInput
   orderItems?: Prisma.OrderItemUpdateManyWithoutProductNestedInput
@@ -663,6 +691,7 @@ export type ProductUncheckedUpdateWithoutVariantsInput = {
   price?: Prisma.IntFieldUpdateOperationsInput | number
   color?: Prisma.NullableEnumColorFieldUpdateOperationsInput | $Enums.Color | null
   hideInOrders?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  variantNameOverridesName?: Prisma.BoolFieldUpdateOperationsInput | boolean
   isArchived?: Prisma.BoolFieldUpdateOperationsInput | boolean
   orderItems?: Prisma.OrderItemUncheckedUpdateManyWithoutProductNestedInput
 }
@@ -673,6 +702,7 @@ export type ProductCreateWithoutOrderItemsInput = {
   price: number
   color?: $Enums.Color | null
   hideInOrders?: boolean
+  variantNameOverridesName?: boolean
   isArchived?: boolean
   category?: Prisma.CategoryCreateNestedOneWithoutProductsInput
   variants?: Prisma.VariantCreateNestedManyWithoutProductInput
@@ -686,6 +716,7 @@ export type ProductUncheckedCreateWithoutOrderItemsInput = {
   price: number
   color?: $Enums.Color | null
   hideInOrders?: boolean
+  variantNameOverridesName?: boolean
   isArchived?: boolean
   variants?: Prisma.VariantUncheckedCreateNestedManyWithoutProductInput
 }
@@ -712,6 +743,7 @@ export type ProductUpdateWithoutOrderItemsInput = {
   price?: Prisma.IntFieldUpdateOperationsInput | number
   color?: Prisma.NullableEnumColorFieldUpdateOperationsInput | $Enums.Color | null
   hideInOrders?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  variantNameOverridesName?: Prisma.BoolFieldUpdateOperationsInput | boolean
   isArchived?: Prisma.BoolFieldUpdateOperationsInput | boolean
   category?: Prisma.CategoryUpdateOneWithoutProductsNestedInput
   variants?: Prisma.VariantUpdateManyWithoutProductNestedInput
@@ -725,6 +757,7 @@ export type ProductUncheckedUpdateWithoutOrderItemsInput = {
   price?: Prisma.IntFieldUpdateOperationsInput | number
   color?: Prisma.NullableEnumColorFieldUpdateOperationsInput | $Enums.Color | null
   hideInOrders?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  variantNameOverridesName?: Prisma.BoolFieldUpdateOperationsInput | boolean
   isArchived?: Prisma.BoolFieldUpdateOperationsInput | boolean
   variants?: Prisma.VariantUncheckedUpdateManyWithoutProductNestedInput
 }
@@ -736,6 +769,7 @@ export type ProductCreateManyCategoryInput = {
   price: number
   color?: $Enums.Color | null
   hideInOrders?: boolean
+  variantNameOverridesName?: boolean
   isArchived?: boolean
 }
 
@@ -745,6 +779,7 @@ export type ProductUpdateWithoutCategoryInput = {
   price?: Prisma.IntFieldUpdateOperationsInput | number
   color?: Prisma.NullableEnumColorFieldUpdateOperationsInput | $Enums.Color | null
   hideInOrders?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  variantNameOverridesName?: Prisma.BoolFieldUpdateOperationsInput | boolean
   isArchived?: Prisma.BoolFieldUpdateOperationsInput | boolean
   variants?: Prisma.VariantUpdateManyWithoutProductNestedInput
   orderItems?: Prisma.OrderItemUpdateManyWithoutProductNestedInput
@@ -757,6 +792,7 @@ export type ProductUncheckedUpdateWithoutCategoryInput = {
   price?: Prisma.IntFieldUpdateOperationsInput | number
   color?: Prisma.NullableEnumColorFieldUpdateOperationsInput | $Enums.Color | null
   hideInOrders?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  variantNameOverridesName?: Prisma.BoolFieldUpdateOperationsInput | boolean
   isArchived?: Prisma.BoolFieldUpdateOperationsInput | boolean
   variants?: Prisma.VariantUncheckedUpdateManyWithoutProductNestedInput
   orderItems?: Prisma.OrderItemUncheckedUpdateManyWithoutProductNestedInput
@@ -769,6 +805,7 @@ export type ProductUncheckedUpdateManyWithoutCategoryInput = {
   price?: Prisma.IntFieldUpdateOperationsInput | number
   color?: Prisma.NullableEnumColorFieldUpdateOperationsInput | $Enums.Color | null
   hideInOrders?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  variantNameOverridesName?: Prisma.BoolFieldUpdateOperationsInput | boolean
   isArchived?: Prisma.BoolFieldUpdateOperationsInput | boolean
 }
 
@@ -820,6 +857,7 @@ export type ProductSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs 
   price?: boolean
   color?: boolean
   hideInOrders?: boolean
+  variantNameOverridesName?: boolean
   isArchived?: boolean
   category?: boolean | Prisma.Product$categoryArgs<ExtArgs>
   variants?: boolean | Prisma.Product$variantsArgs<ExtArgs>
@@ -835,6 +873,7 @@ export type ProductSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Exten
   price?: boolean
   color?: boolean
   hideInOrders?: boolean
+  variantNameOverridesName?: boolean
   isArchived?: boolean
   category?: boolean | Prisma.Product$categoryArgs<ExtArgs>
 }, ExtArgs["result"]["product"]>
@@ -847,6 +886,7 @@ export type ProductSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Exten
   price?: boolean
   color?: boolean
   hideInOrders?: boolean
+  variantNameOverridesName?: boolean
   isArchived?: boolean
   category?: boolean | Prisma.Product$categoryArgs<ExtArgs>
 }, ExtArgs["result"]["product"]>
@@ -859,10 +899,11 @@ export type ProductSelectScalar = {
   price?: boolean
   color?: boolean
   hideInOrders?: boolean
+  variantNameOverridesName?: boolean
   isArchived?: boolean
 }
 
-export type ProductOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "categoryId" | "order" | "name" | "price" | "color" | "hideInOrders" | "isArchived", ExtArgs["result"]["product"]>
+export type ProductOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "categoryId" | "order" | "name" | "price" | "color" | "hideInOrders" | "variantNameOverridesName" | "isArchived", ExtArgs["result"]["product"]>
 export type ProductInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   category?: boolean | Prisma.Product$categoryArgs<ExtArgs>
   variants?: boolean | Prisma.Product$variantsArgs<ExtArgs>
@@ -891,6 +932,7 @@ export type $ProductPayload<ExtArgs extends runtime.Types.Extensions.InternalArg
     price: number
     color: $Enums.Color | null
     hideInOrders: boolean
+    variantNameOverridesName: boolean
     isArchived: boolean
   }, ExtArgs["result"]["product"]>
   composites: {}
@@ -1325,6 +1367,7 @@ export interface ProductFieldRefs {
   readonly price: Prisma.FieldRef<"Product", 'Int'>
   readonly color: Prisma.FieldRef<"Product", 'Color'>
   readonly hideInOrders: Prisma.FieldRef<"Product", 'Boolean'>
+  readonly variantNameOverridesName: Prisma.FieldRef<"Product", 'Boolean'>
   readonly isArchived: Prisma.FieldRef<"Product", 'Boolean'>
 }
     

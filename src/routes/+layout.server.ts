@@ -1,3 +1,4 @@
+import { defaultSettings } from '$lib/defaultSettings';
 import { client } from '$lib/server/database';
 import { CONFIG_PATH } from '$lib/server/environment';
 import type { LayoutServerLoad } from './$types';
@@ -32,18 +33,6 @@ export const load: LayoutServerLoad = async ({ locals }) => {
 		return { categories, config };
 	} catch (error) {
 		console.error('Error reading config:', error);
-		const config: App.Config = {
-			title: 'Kasse',
-			itemsPerRow: 3,
-			currency: {
-				before: '€',
-				after: '',
-				digits: 2
-			},
-			cardPayment: {
-				enabled: false
-			}
-		};
-		return { categories, config };
+		return { categories, config: defaultSettings };
 	}
 };

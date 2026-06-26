@@ -19,7 +19,7 @@
 		class="absolute top-0 right-0 bottom-0 left-0 flex items-center justify-center rounded-xl bg-black/40 backdrop-blur-sm"
 	>
 		<div class="w-4/5 max-w-2xl overflow-hidden rounded-lg bg-gray-50 p-4 shadow-xl">
-			<div class="mb-4 flex flex-row justify-start gap-4">
+			<div class="mb-4 flex flex-row flex-wrap justify-around gap-4">
 				{#each openItem.variants.filter((v) => !v.isArchived) as variant (variant.id)}
 					{@const color: Color = variant.color ?? openItem.color ?? categoryColor ?? Color.red}
 					<button

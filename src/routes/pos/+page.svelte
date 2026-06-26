@@ -241,7 +241,7 @@
 									amount={amount + variantAmount}
 									config={data.config}
 									onclick={() => {
-										if (item.variants.length > 0) {
+										if (item.variants?.some((v) => !v.isArchived)) {
 											variantOpenItemId = item.id;
 											return;
 										}

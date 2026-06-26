@@ -92,6 +92,7 @@ export const ProductScalarFieldEnum = {
   price: 'price',
   color: 'color',
   hideInOrders: 'hideInOrders',
+  variantNameOverridesName: 'variantNameOverridesName',
   isArchived: 'isArchived'
 } as const
 

@@ -131,7 +131,7 @@
 												'<span class="font-extrabold italic">$1</span>'
 											)}
 											<span class="italic">
-												{variant.name}
+												{@html variant.name}
 											</span>
 										</span>
 										<span class="text-sm font-normal text-gray-600">

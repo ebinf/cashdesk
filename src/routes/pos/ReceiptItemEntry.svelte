@@ -19,7 +19,7 @@
 			{@html item.name.replace(/\*(\S+)\*/g, '<span class="font-semibold">$1</span>')}
 		</span>
 		{#if item.variant}
-			<span class="-mt-2 text-lg text-gray-600">{item.variant.name}</span>
+			<span class="-mt-2 text-lg text-gray-600">{@html item.variant.name}</span>
 		{/if}
 	</div>
 	<div class="text-right font-bold">

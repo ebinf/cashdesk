@@ -38,7 +38,7 @@
 	</p>
 	<p class="pt-2 text-base">
 		<FormattedCurrency amount={item.price} {config} />
-		{#if item.variants && item.variants.length > 0}*{/if}
+		{#if item.variants?.some((v) => !v.isArchived)}*{/if}
 	</p>
 	{#if amount > 0}
 		<p class="absolute -bottom-7 -left-1 text-9xl leading-none font-bold opacity-30">

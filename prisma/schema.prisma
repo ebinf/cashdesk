@@ -33,17 +33,18 @@ model Category {
 }
 
 model Product {
-  id           Int         @id @default(autoincrement())
-  category     Category?   @relation(fields: [categoryId], references: [id])
-  categoryId   Int?
-  order        Int
-  name         String
-  price        Int
-  color        Color?
-  hideInOrders Boolean     @default(false)
-  variants     Variant[]
-  orderItems   OrderItem[]
-  isArchived   Boolean     @default(false)
+  id                       Int         @id @default(autoincrement())
+  category                 Category?   @relation(fields: [categoryId], references: [id])
+  categoryId               Int?
+  order                    Int
+  name                     String
+  price                    Int
+  color                    Color?
+  hideInOrders             Boolean     @default(false)
+  variants                 Variant[]
+  variantNameOverridesName Boolean     @default(false)
+  orderItems               OrderItem[]
+  isArchived               Boolean     @default(false)
 }
 
 model Variant {

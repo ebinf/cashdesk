@@ -115,14 +115,23 @@
 					{#if item.amount > 1}
 						<span class="font-bold">{item.amount}</span>
 					{/if}
-					<span
-						>{@html item.product.name.replace(
-							/\*(\S+)\*/g,
-							'<span class="font-bold">$1</span>'
-						)}</span
-					>
-					{#if item.variant}
-						<span class="italic">{item.variant.name}</span>
+					{#if item.variant && item.product.variantNameOverridesName}
+						<span
+							>{@html item.variant.name.replace(
+								/\*(\S+)\*/g,
+								'<span class="font-bold">$1</span>'
+							)}</span
+						>
+					{:else}
+						<span
+							>{@html item.product.name.replace(
+								/\*(\S+)\*/g,
+								'<span class="font-bold">$1</span>'
+							)}</span
+						>
+						{#if item.variant}
+							<span class="italic">{@html item.variant.name}</span>
+						{/if}
 					{/if}
 				</button>
 			{/each}

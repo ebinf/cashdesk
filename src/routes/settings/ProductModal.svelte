@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { type Prisma } from '$lib/prisma/client';
 	import { Color } from '$lib/prisma/enums';
-	import { variant } from 'valibot';
 	import {
 		addProduct,
 		deleteVariant,
@@ -11,7 +10,6 @@
 	} from './settings.remote';
 	import ProductVariantModal from './ProductVariantModal.svelte';
 	import FormattedCurrency from '$lib/FormattedCurrency.svelte';
-	import ItemButton from '../pos/ItemButton.svelte';
 
 	interface Props {
 		config: App.Config;
@@ -33,6 +31,7 @@
 	let categoryId: number = $derived(category);
 	let price: number = $derived(product?.price ?? 0);
 	let hideInOrders: boolean = $derived(product?.hideInOrders ?? false);
+	let variantNameOverridesName: boolean = $derived(product?.variantNameOverridesName ?? false);
 
 	let editVariant: number | true | null = $state(null);
 </script>
@@ -171,6 +170,28 @@
 					</div>
 				</div>
 				<div>
+					<label
+						for="variantNameOverridesName"
+						class="block text-sm leading-6 font-medium text-gray-900"
+					>
+						Varianten-Name überschreibt Produkt-Name
+					</label>
+					<div class="mt-2">
+						<label class="flex flex-row items-start gap-2 text-sm text-gray-500">
+							<input
+								type="checkbox"
+								name="variantNameOverridesName"
+								id="variantNameOverridesName"
+								class="mt-1 rounded-md border-0 text-gray-900 shadow-sm ring-1 ring-gray-300"
+								bind:checked={variantNameOverridesName}
+							/>
+							In den Bestellungen wird nur der Name der Variante angezeigt, nicht der Name des Produkts.
+							Das ist nützlich, wenn die Varianten sehr unterschiedliche Namen haben, beispielsweise bei
+							Getränken mit verschiedenen Geschmacksrichtungen.
+						</label>
+					</div>
+				</div>
+				<div>
 					<label for="variants" class="block text-sm leading-6 font-medium text-gray-900"
 						>Varianten</label
 					>
@@ -182,7 +203,7 @@
 						{:else}
 							<div class="mb-2 grid grid-cols-4 gap-2 empty:mb-0">
 								{#each product.variants.filter((v) => !v.isArchived) as variant, i (variant.id)}
-									{@const color: Color = variant.color ?? product.color ?? Color.red}
+									{@const color: Color = variant.color ?? product.color ?? categories.find((c) => c.id === category)?.color ?? Color.red}
 									<div class="flex w-full flex-col items-stretch">
 										<button
 											onclick={() => {
@@ -339,7 +360,8 @@
 									color: color,
 									price: price,
 									categoryId: categoryId,
-									hideInOrders: hideInOrders
+									hideInOrders: hideInOrders,
+									variantNameOverridesName: variantNameOverridesName
 								})
 							) {
 								onclose?.();
@@ -351,7 +373,8 @@
 									color: color,
 									price: price,
 									categoryId: categoryId,
-									hideInOrders: hideInOrders
+									hideInOrders: hideInOrders,
+									variantNameOverridesName: variantNameOverridesName
 								})
 							) {
 								onclose?.();
