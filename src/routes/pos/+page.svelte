@@ -1,143 +1,248 @@
 <script lang="ts">
-	import ItemButton from './ItemButton.svelte';
-	import Category from './Category.svelte';
+	import { onMount } from 'svelte';
 	import CategoryList from './CategoryList.svelte';
+	import Category from './Category.svelte';
+	import type { PageData } from './$types';
+	import ItemButton from './ItemButton.svelte';
+	import type { Prisma, Product, Variant } from '$lib/prisma/client';
+	import VariantSelectionModal from './VariantSelectionModal.svelte';
+	import CancelModal from './CancelModal.svelte';
+	import { getOrderItem } from '$lib/utils';
 	import Receipt from './Receipt.svelte';
 	import PayModal from './PayModal.svelte';
-	import OrderPanel from './OrderPanel.svelte';
-	import { onMount } from 'svelte';
-	import CancelModal from './CancelModal.svelte';
-	import { config } from '$lib/store';
-	import { goto } from '$app/navigation';
-	import { getOrderItem, itemIdToItem } from '$lib/utils';
-	import VariantSelectionModal from './VariantSelectionModal.svelte';
-	import Database from '@tauri-apps/plugin-sql';
+	import {
+		addItemToFloatingOrder,
+		clearFloatingOrder,
+		getActiveOrders,
+		getFloatingOrders,
+		keepAliveFloatingOrder,
+		newFloatingOrder,
+		removeItemFromFloatingOrder,
+		submitFloatingOrder,
+		submitOrder,
+		updateItemAmountInFloatingOrder
+	} from '../commands.remote';
+	import OrderPanel from '../OrderPanel.svelte';
+	import FloatingOrderPanel from '../FloatingOrderPanel.svelte';
+	import { onNavigate } from '$app/navigation';
+	import { browser } from '$app/env';
+	import SettingsModal from './SettingsModal.svelte';
+	import CardPayModal from './CardPayModal.svelte';
 
-	if (!$config) {
-		goto('/');
+	interface Props {
+		data: PageData;
 	}
 
-	const db = Database.get('sqlite:cashdesk.db');
+	let { data }: Props = $props();
 
-	const data: { config: App.Config } = {
-		config: $config
-	};
+	let showSettings: boolean = $state(false);
+	let variantOpenItemId: number | null = $state(null);
+	let variantOpenItem: Prisma.ProductGetPayload<{ include: { variants: true } }> | null = $derived(
+		variantOpenItemId
+			? (data.categories.flatMap((c) => c.products).find((p) => p.id === variantOpenItemId) ?? null)
+			: null
+	);
+	let payModalOpen: boolean = $state(false);
+	let cardPayModalOpen: boolean = $state(false);
+	let cancelModalOpen: boolean = $state(false);
 
-	let orderNumber: number = 0;
+	let floatingOrderId: number | null = null;
+	let floatingOrderInterval: NodeJS.Timeout | null = null;
 
-	let orderBacklog: App.Order[] = [];
-
-	let currentOrder: Map<string, number> = new Map();
-	$: totalPrice = Array.from(currentOrder.entries()).reduce(
-		(acc, [key, value]) => acc + getOrderItem(data.config, key)!.price * value,
-		0
+	let currentOrder: Map<string, number> = $state(new Map());
+	let totalPrice = $derived(
+		Array.from(currentOrder.entries()).reduce((acc, [key, value]) => {
+			const [productId, variantId] = key.split('_').map(Number);
+			const product = getOrderItem(data.categories, productId, variantId);
+			if (product) {
+				acc += product.price * value;
+			}
+			return acc;
+		}, 0)
 	);
 
-	let variantOpenItem: App.Item | null = null;
-	let payModalOpen: boolean = false;
-	let cancelModalOpen: boolean = false;
-
-	const addItem = (item: App.Item, variant?: App.Variant) => {
-		const id = variant ? `${item.id}-${variant.idSuffix}` : item.id;
-		if (currentOrder.has(id)) {
-			currentOrder.set(id, currentOrder.get(id)! + 1);
-		} else {
-			currentOrder.set(id, 1);
-		}
-		currentOrder = new Map(currentOrder);
-	};
-
-	const removeItem = (item: App.Item | undefined, variant?: App.Variant) => {
-		if (!item) return;
-		const id = variant ? `${item.id}-${variant.idSuffix}` : item.id;
-		if (!currentOrder.has(id)) return;
-		if (currentOrder.get(id)! <= 1) {
-			currentOrder.delete(id);
-		} else {
-			currentOrder.set(id, currentOrder.get(id)! - 1);
-		}
-		currentOrder = new Map(currentOrder);
-	};
-
-	const clearOrder = () => {
+	const clearOrder = async () => {
 		currentOrder = new Map();
+		resetFloatingOrder();
 	};
 
-	const submitOrder = async () => {
-		const now = new Date();
-		const dbOrder = await db.execute(
-			'INSERT INTO orders (createdAt, totalPrice) VALUES ($1, $2);',
-			[now.toISOString(), totalPrice]
-		);
-		orderNumber = dbOrder.lastInsertId || 1;
-		for (const [id, amount] of currentOrder.entries()) {
-			const item = getOrderItem(data.config, id);
-			if (!item) continue;
-			await db.execute(
-				'INSERT INTO orderItems ("order",itemId,variantId,amount,singlePrice,totalPrice,name) VALUES ($1,$2,$3,$4,$5,$6,$7);',
-				[
-					orderNumber,
-					item.item.id,
-					item.variant?.idSuffix,
-					amount,
-					item.price,
-					amount * item.price,
-					item.variant ? `${item.item.name}, ${item.variant.name}` : item.item.name
-				]
-			);
-		}
-		let relevantItems = Array.from(currentOrder.entries());
-		relevantItems = relevantItems.filter(([id, _]) => !itemIdToItem(data.config, id)?.hideInOrders);
-		if (relevantItems.length > 0) {
-			orderBacklog.push({
-				id: orderNumber,
-				timestamp: now.valueOf(),
-				totalPrice: totalPrice,
-				items: Object.fromEntries(relevantItems)
+	async function setupNewFloatingOrder() {
+		if (floatingOrderId) return;
+		floatingOrderId = await newFloatingOrder();
+		floatingOrderInterval = setInterval(() => {
+			if (floatingOrderId) {
+				keepAliveFloatingOrder(floatingOrderId);
+			}
+		}, 10 * 1000);
+		for (const [key, amount] of currentOrder.entries()) {
+			const [productId, variantId] = key.split('_').map(Number);
+			await updateItemAmountInFloatingOrder({
+				orderId: floatingOrderId!,
+				productId,
+				variantId: isNaN(variantId) ? undefined : variantId,
+				amount
 			});
-			orderBacklog = [...orderBacklog];
 		}
-		currentOrder = new Map();
+	}
+
+	function resetFloatingOrder() {
+		if (!floatingOrderId) return;
+		clearFloatingOrder(floatingOrderId);
+		floatingOrderId = null;
+		if (floatingOrderInterval) {
+			clearInterval(floatingOrderInterval);
+			floatingOrderInterval = null;
+		}
+	}
+
+	const addItem = async (product: Product, variant?: Variant) => {
+		if (!floatingOrderId) {
+			await setupNewFloatingOrder();
+		}
+		const index = `${product.id}${variant ? `_${variant.id}` : ''}`;
+		if (currentOrder.has(index)) {
+			currentOrder.set(index, currentOrder.get(index)! + 1);
+			if (
+				(await updateItemAmountInFloatingOrder({
+					orderId: floatingOrderId!,
+					productId: product.id,
+					variantId: variant?.id,
+					amount: currentOrder.get(index)!
+				})) === false
+			) {
+				floatingOrderId = null;
+				await setupNewFloatingOrder();
+			}
+		} else {
+			currentOrder.set(index, 1);
+			if (
+				(await addItemToFloatingOrder({
+					orderId: floatingOrderId!,
+					productId: product.id,
+					variantId: variant?.id
+				})) === false
+			) {
+				floatingOrderId = null;
+				await setupNewFloatingOrder();
+			}
+		}
+		currentOrder = new Map(currentOrder);
 	};
 
-	let now: Date = new Date();
+	const removeItem = async (product: number, variant?: number) => {
+		const index = `${product}${variant ? `_${variant}` : ''}`;
+		if (!currentOrder.has(index)) return;
+		if (!floatingOrderId) {
+			await setupNewFloatingOrder();
+		}
+		if (currentOrder.get(index)! <= 1) {
+			currentOrder.delete(index);
+			if (
+				(await removeItemFromFloatingOrder({
+					orderId: floatingOrderId!,
+					productId: product,
+					variantId: variant
+				})) === false
+			) {
+				floatingOrderId = null;
 
+				await setupNewFloatingOrder();
+			}
+		} else {
+			currentOrder.set(index, currentOrder.get(index)! - 1);
+			if (
+				(await updateItemAmountInFloatingOrder({
+					orderId: floatingOrderId!,
+					productId: product,
+					variantId: variant,
+					amount: currentOrder.get(index)!
+				})) === false
+			) {
+				floatingOrderId = null;
+
+				await setupNewFloatingOrder();
+			}
+		}
+		currentOrder = new Map(currentOrder);
+	};
+
+	async function doSubmitOrder(paymentMethod: string) {
+		let floatingOrderSubmitResult: null | boolean = null;
+		if (floatingOrderId) {
+			floatingOrderSubmitResult = await submitFloatingOrder({
+				floatingOrderId: floatingOrderId,
+				paymentMethod,
+				items: Array.from(currentOrder.entries()).map(([key, amount]) => {
+					const [productId, variantId] = key.split('_').map(Number);
+					return { productId, variantId, amount };
+				}),
+				total: totalPrice
+			});
+		}
+		if (!floatingOrderId || floatingOrderSubmitResult === false) {
+			await submitOrder({
+				items: Array.from(currentOrder.entries()).map(([key, amount]) => {
+					const [productId, variantId] = key.split('_').map(Number);
+					return { productId, variantId, amount };
+				}),
+				paymentMethod,
+				total: totalPrice
+			});
+		}
+		resetFloatingOrder();
+		currentOrder = new Map();
+	}
+
+	let now: Date = $state(new Date());
 	onMount(() => {
 		const interval = setInterval(() => {
 			now = new Date();
 		}, 1000);
 		return () => clearInterval(interval);
 	});
+
+	onNavigate(async () => {
+		resetFloatingOrder();
+	});
+
+	if (browser) {
+		window.onbeforeunload = async (event) => {
+			resetFloatingOrder();
+		};
+	}
 </script>
 
-<div class="flex flex-row h-full gap-10">
-	<div class="bg-gray-50 w-3/4 rounded-xl shadow-2xl flex flex-row relative">
-		<div class="w-3/4 flex flex-col">
-			<div class="flex flex-row text-2xl font-semibold text-gray-800 p-4 border-b border-gray-200">
-				<p class="grow">
-					<img src="/logo.svg" alt="Logo" class="h-8 inline" />
+<div class="flex h-full flex-row gap-10">
+	<div class="relative flex w-3/4 flex-row rounded-xl bg-gray-50 shadow-2xl">
+		<div class="flex w-3/4 flex-col">
+			<div class="flex flex-row border-b border-gray-200 p-4 text-2xl font-semibold text-gray-800">
+				<p class="flex grow items-center gap-2">
+					<button onclick={() => (showSettings = true)}>
+						<img src="/logo.svg" alt="Logo" class="inline h-8" />
+					</button>
 					{data.config.title ?? 'Kasse'}
 				</p>
-				<div class="text-right font-normal">{now.toLocaleTimeString()}</div>
+				<div class="text-right font-normal">{now.toLocaleTimeString('de-DE')}</div>
 			</div>
 			<div class="overflow-y-auto">
 				<CategoryList>
-					{#each data.config.categories as category}
-						<Category title={category.name} open={true} config={data.config}>
-							{#each category.items as item (item.id)}
+					{#each data.categories.filter((c) => !c.isArchived && c.products.some((p) => !p.isArchived)) as category}
+						<Category title={category.name} config={data.config}>
+							{#each category.products.filter((p) => !p.isArchived) as item (item.id)}
+								{@const amount = currentOrder.get(`${item.id}`) ?? 0}
+								{@const variantAmount = item.variants
+									? item.variants.reduce((sum, variant) => {
+											return sum + (currentOrder.get(`${item.id}_${variant.id}`) ?? 0);
+										}, 0)
+									: 0}
 								<ItemButton
 									{item}
 									color={category.color}
-									amount={(currentOrder.get(item.id) ?? 0) +
-										(item.variants?.reduce(
-											(acc, variant) =>
-												(acc += currentOrder.get(`${item.id}-${variant.idSuffix}`) ?? 0),
-											0
-										) ?? 0)}
+									amount={amount + variantAmount}
 									config={data.config}
-									on:click={() => {
-										if (item.variants && item.variants.length > 0) {
-											variantOpenItem = item;
+									onclick={() => {
+										if (item.variants?.some((v) => !v.isArchived)) {
+											variantOpenItemId = item.id;
 											return;
 										}
 										addItem(item);
@@ -149,50 +254,76 @@
 				</CategoryList>
 			</div>
 		</div>
-		<div class="w-1/3 bg-gray-200 h-full rounded-r-xl flex flex-col divide-y divide-gray-300">
-			<div class="p-4 grow overflow-hidden">
+		<div class="flex h-full w-1/3 flex-col divide-y divide-gray-300 rounded-r-xl bg-gray-200">
+			<div class="grow overflow-hidden">
 				<Receipt
+					categories={data.categories}
 					{currentOrder}
 					{totalPrice}
 					config={data.config}
-					on:remove={(event) => {
-						removeItem(event.detail.item, event.detail?.variant);
+					onremove={(id, variantId) => {
+						removeItem(id, variantId);
 					}}
 				/>
 			</div>
-			<div class="p-4 flex flex-col gap-4">
+			<div class="flex flex-col gap-4 p-4">
+				{#if data.config.cardPayment?.enabled}
+					<div class="flex flex-row items-stretch justify-evenly gap-4">
+						<button
+							onclick={() => (payModalOpen = true)}
+							disabled={currentOrder.size === 0}
+							type="button"
+							class="w-full grow rounded-md bg-gray-600 px-3.5 py-10 text-2xl font-semibold text-white shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600 disabled:cursor-not-allowed disabled:bg-gray-400"
+						>
+							Bar
+						</button>
+						<button
+							onclick={() => (cardPayModalOpen = true)}
+							disabled={currentOrder.size === 0 || totalPrice <= 0}
+							type="button"
+							class="shrink-0 rounded-md bg-blue-600 px-3.5 py-10 text-2xl font-semibold text-white shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 disabled:cursor-not-allowed disabled:bg-blue-300"
+						>
+							Karte
+						</button>
+					</div>
+				{:else}
+					<button
+						onclick={() => (payModalOpen = true)}
+						disabled={currentOrder.size === 0}
+						type="button"
+						class="w-full rounded-md bg-gray-600 px-3.5 py-10 text-2xl font-semibold text-white shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600 disabled:cursor-not-allowed disabled:bg-gray-400"
+					>
+						Abschließen & Bezahlen
+					</button>
+				{/if}
 				<button
-					on:click={() => (payModalOpen = true)}
+					onclick={() => (cancelModalOpen = true)}
 					disabled={currentOrder.size === 0}
 					type="button"
-					class="w-full rounded-md bg-gray-600 px-3.5 py-10 text-2xl font-semibold text-white shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600 disabled:bg-gray-400 disabled:cursor-not-allowed"
-				>
-					Abschließen & Bezahlen
-				</button>
-				<button
-					on:click={() => (cancelModalOpen = true)}
-					disabled={currentOrder.size === 0}
-					type="button"
-					class="w-full rounded-md bg-gray-50 px-3.5 py-4 text-base font-semibold text-gray-600 border-gray-300 border focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600 disabled:bg-gray-200 disabled:cursor-not-allowed"
+					class="w-full rounded-md border border-gray-300 bg-gray-50 px-3.5 py-4 text-base font-semibold text-gray-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600 disabled:cursor-not-allowed disabled:bg-gray-200"
 				>
 					Alles stornieren
 				</button>
 			</div>
 		</div>
+
+		<SettingsModal config={data.config} bind:open={showSettings} />
 		<VariantSelectionModal
 			openItem={variantOpenItem}
+			categoryColor={data.categories.find((c) => c.products.some((p) => p.id === variantOpenItemId))
+				?.color}
 			config={data.config}
-			on:selected={(e) => {
+			onselected={(variant: Variant) => {
 				if (!variantOpenItem) return;
-				addItem(variantOpenItem, e.detail.variant);
-				variantOpenItem = null;
+				addItem(variantOpenItem, variant);
+				variantOpenItemId = null;
 			}}
-			on:cancel={() => (variantOpenItem = null)}
+			oncancel={() => (variantOpenItemId = null)}
 		/>
 		<CancelModal
 			open={cancelModalOpen}
-			on:cancel={() => (cancelModalOpen = false)}
-			on:delete={() => {
+			oncancel={() => (cancelModalOpen = false)}
+			ondelete={() => {
 				cancelModalOpen = false;
 				clearOrder();
 			}}
@@ -200,27 +331,30 @@
 		<PayModal
 			config={data.config}
 			{totalPrice}
-			open={payModalOpen}
-			on:payed={async () => {
-				payModalOpen = false;
-				await submitOrder();
+			bind:open={payModalOpen}
+			onpayed={async () => {
+				await doSubmitOrder('cash');
 			}}
-			on:cancel={() => (payModalOpen = false)}
+			oncancel={() => {}}
 		/>
-	</div>
-	<div class="w-1/3 space-y-4 -mt-5 overflow-y-auto -mb-5 -mr-5 p-5">
-		{#each orderBacklog as order (order.id)}
-			<OrderPanel
-				{order}
+		{#if data.config.cardPayment?.enabled}
+			<CardPayModal
 				config={data.config}
-				on:done={async () => {
-					orderBacklog = orderBacklog.filter((iorder) => iorder.id != order.id);
-					await db.execute('UPDATE orders SET finishedAt = $1 WHERE id = $2;', [
-						new Date().toISOString(),
-						order.id
-					]);
+				{totalPrice}
+				bind:open={cardPayModalOpen}
+				onpayed={async () => {
+					await doSubmitOrder('card');
 				}}
+				oncancel={() => {}}
 			/>
+		{/if}
+	</div>
+	<div class="-mt-5 -mr-5 -mb-5 w-1/3 space-y-4 overflow-y-auto p-5">
+		{#each await getActiveOrders() as order (order.id)}
+			<OrderPanel {order} />
+		{/each}
+		{#each await getFloatingOrders() as order (order.id)}
+			<FloatingOrderPanel {order} />
 		{/each}
 	</div>
 </div>

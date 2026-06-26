@@ -1,30 +1,28 @@
 <script lang="ts">
 	import FormattedCurrency from '$lib/FormattedCurrency.svelte';
+	import type { Product, Variant } from '$lib/prisma/client';
 
-	export let item: { item: App.Item; variant?: App.Variant; price: number } | undefined;
-	export let amount: number;
-	export let config: App.Config;
+	interface Props {
+		item: Product & { variant?: Variant };
+		amount: number;
+		config: App.Config;
+		onclick: () => void;
+	}
+
+	let { item, amount, config, onclick }: Props = $props();
 </script>
 
-<button class="bg-gray-200 flex flex-row py-3 text-2xl w-full gap-2" on:click>
-	<div class="font-semibold text-right">{amount}</div>
-	<div class="grow flex flex-col text-left">
-		{#if item}
-			<span class="mb-0"
-				>{@html item.item.name.replace(/\*(\S+)\*/g, '<span class="font-semibold">$1</span>')}</span
-			>
-			{#if item.variant}
-				<span class="text-gray-600 text-lg -mt-2">{item.variant.name}</span>
-			{/if}
-		{:else}
-			<span class="text-gray-600">Unknown</span>
+<button class="flex w-full flex-row gap-2 px-4 py-3 text-2xl" {onclick}>
+	<div class="text-right font-semibold">{amount}</div>
+	<div class="flex grow flex-col text-left">
+		<span class="mb-0">
+			{@html item.name.replace(/\*(\S+)\*/g, '<span class="font-semibold">$1</span>')}
+		</span>
+		{#if item.variant}
+			<span class="-mt-2 text-lg text-gray-600">{@html item.variant.name}</span>
 		{/if}
 	</div>
-	<div class="font-bold text-right">
-		{#if item}
-			<FormattedCurrency amount={amount * item.price} {config} />
-		{:else}
-			<FormattedCurrency amount={0} {config} />
-		{/if}
+	<div class="text-right font-bold">
+		<FormattedCurrency amount={amount * item.price} {config} />
 	</div>
 </button>

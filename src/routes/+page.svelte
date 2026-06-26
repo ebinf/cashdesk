@@ -1,104 +1,104 @@
 <script lang="ts">
-	import { goto } from '$app/navigation';
-	import { config } from '$lib/store';
-	import { open } from '@tauri-apps/plugin-dialog';
-	import { readTextFile } from '@tauri-apps/plugin-fs';
-	import { listen, type Event } from '@tauri-apps/api/event';
-	import { parse } from 'yaml';
-	import FormattedCurrency from '$lib/FormattedCurrency.svelte';
 	import { onMount } from 'svelte';
-	import Database from '@tauri-apps/plugin-sql';
+	import type { PageData } from './$types';
+	import { version } from '$app/env';
 
-	async function fileDialog() {
-		const file = await open({
-			multiple: false,
-			directory: false,
-			filters: [{ name: 'YAML', extensions: ['yaml', 'yml'] }],
-			title: 'Konfigurationsdatei auswählen'
-		});
-		readConfigFile(file ?? '');
-		return file;
-	}
+	let { data }: { data: PageData } = $props();
 
-	listen('tauri://drop', (event: Event<any>) => {
-		readConfigFile(event.payload?.paths?.[0]);
-	});
-
-	async function readConfigFile(path: string) {
-		if (!path) return;
-		if (!path.endsWith('.yaml') && !path.endsWith('.yml')) {
-			alert('Die Datei muss eine YAML-Datei sein.');
-			return;
-		}
-		const content = await readTextFile(path);
-		const configFile: App.Config = parse(content);
-		for (const category in configFile.categories) {
-			configFile.categories[category].items = configFile.categories[category].items.map((item) => {
-				item.id = item.id ? item.id : Math.random().toString(36).substr(2, 9);
-				item?.variants?.forEach((variant) => {
-					variant.idSuffix = variant.idSuffix
-						? variant.idSuffix
-						: Math.random().toString(36).substr(2, 9);
-				});
-				return item;
-			});
-		}
-		config.set(configFile);
-		goto('/pos');
-	}
-
-	const db = Database.get('sqlite:cashdesk.db');
-	let totalIncome: number = 0;
-	onMount(async () => {
-		totalIncome = Object.values(
-			((await db.select('SELECT SUM(totalPrice) FROM orders;')) as any)[0]
-		)[0] as number;
+	let now: Date = $state(new Date());
+	onMount(() => {
+		const interval = setInterval(() => {
+			now = new Date();
+		}, 1000);
+		return () => clearInterval(interval);
 	});
 </script>
 
-<div class="h-full flex flex-col items-center justify-center gap-y-4">
-	<div class="bg-gray-50 w-1/2 h-30 rounded-xl shadow-2xl p-4">
-		<div class="col-span-full">
-			<label for="cover-photo" class="block text-sm font-medium leading-6 text-gray-900"
-				>Konfigurationsdatei</label
-			>
-			<div
-				class="mt-2 flex justify-center rounded-lg border border-dashed border-gray-900/25 px-6 py-10"
-			>
-				<div class="text-center">
-					<svg
-						class="mx-auto h-12 w-12 text-gray-300"
-						viewBox="0 0 24 24"
-						fill="none"
-						aria-hidden="true"
-						stroke-width="1.5"
-						stroke="currentColor"
-					>
-						<path
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							d="M11.42 15.17 17.25 21A2.652 2.652 0 0 0 21 17.25l-5.877-5.877M11.42 15.17l2.496-3.03c.317-.384.74-.626 1.208-.766M11.42 15.17l-4.655 5.653a2.548 2.548 0 1 1-3.586-3.586l6.837-5.63m5.108-.233c.55-.164 1.163-.188 1.743-.14a4.5 4.5 0 0 0 4.486-6.336l-3.276 3.277a3.004 3.004 0 0 1-2.25-2.25l3.276-3.276a4.5 4.5 0 0 0-6.336 4.486c.091 1.076-.071 2.264-.904 2.95l-.102.085m-1.745 1.437L5.909 7.5H4.5L2.25 3.75l1.5-1.5L7.5 4.5v1.409l4.26 4.26m-1.745 1.437 1.745-1.437m6.615 8.206L15.75 15.75M4.867 19.125h.008v.008h-.008v-.008Z"
-						/>
-					</svg>
-
-					<div class="mt-4 flex text-sm leading-6 text-gray-600">
-						<button
-							class="relative cursor-pointer rounded-md bg-gray-50 font-semibold text-gray-800 focus-within:outline-none focus-within:ring-2 focus-within:ring-gray-600 focus-within:ring-offset-2 hover:text-gray-500"
-							on:click={() => fileDialog()}
-						>
-							<span>Datei auswählen</span>
-						</button>
-						<p class="pl-1">or auf diesen Bereich ziehen</p>
-					</div>
-					<p class="text-xs leading-5 text-gray-600">.YAML oder .YML</p>
-				</div>
-			</div>
-		</div>
+<div class="flex h-full w-full flex-col gap-4">
+	<div class="flex justify-between text-right text-xl text-white">
+		<span class="line-clamp-1 text-left">
+			{data.config.title ?? 'Kasse'}
+		</span>
+		<span>
+			{now.toLocaleTimeString('de-DE')}
+		</span>
 	</div>
-	{#if totalIncome !== null && totalIncome !== undefined}
-		<div class="bg-gray-50 w-1/2 h-30 rounded-xl shadow-2xl p-4">
-			<span class="font-semibold">Kassensturz:</span>
-			<span class="text-gray-600">{totalIncome.toFixed(2)}</span>
-		</div>
-	{/if}
+
+	<a
+		class="flex flex-row gap-x-2 rounded-md border border-gray-300 bg-gray-50 px-3.5 py-4 text-center text-base font-semibold text-gray-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600 max-sm:cursor-not-allowed max-sm:bg-gray-400"
+		href="/pos"
+	>
+		<svg
+			xmlns="http://www.w3.org/2000/svg"
+			fill="none"
+			viewBox="0 0 24 24"
+			stroke-width="1.5"
+			stroke="currentColor"
+			class="size-6"
+		>
+			<path
+				stroke-linecap="round"
+				stroke-linejoin="round"
+				d="M2.25 18.75a60.07 60.07 0 0 1 15.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 0 1 3 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 0 0-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 0 1-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 0 0 3 15h-.75M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm3 0h.008v.008H18V10.5Zm-12 0h.008v.008H6V10.5Z"
+			/>
+		</svg>
+
+		POS (Kasse)
+	</a>
+	<a
+		class="flex flex-row gap-x-2 rounded-md border border-gray-300 bg-gray-50 px-3.5 py-4 text-center text-base font-semibold text-gray-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600 disabled:cursor-not-allowed disabled:bg-gray-200"
+		href="/orders"
+	>
+		<svg
+			xmlns="http://www.w3.org/2000/svg"
+			fill="none"
+			viewBox="0 0 24 24"
+			stroke-width="1.5"
+			stroke="currentColor"
+			class="size-6"
+		>
+			<path
+				stroke-linecap="round"
+				stroke-linejoin="round"
+				d="M3.75 12h16.5m-16.5 3.75h16.5M3.75 19.5h16.5M5.625 4.5h12.75a1.875 1.875 0 0 1 0 3.75H5.625a1.875 1.875 0 0 1 0-3.75Z"
+			/>
+		</svg>
+
+		Bestellungsübersicht
+	</a>
+	<a
+		class="flex flex-row gap-x-2 rounded-md border border-gray-300 bg-gray-50 px-3.5 py-4 text-center text-base font-semibold text-gray-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600 max-sm:cursor-not-allowed max-sm:bg-gray-400"
+		href="/settings"
+	>
+		<svg
+			xmlns="http://www.w3.org/2000/svg"
+			fill="none"
+			viewBox="0 0 24 24"
+			stroke-width="1.5"
+			stroke="currentColor"
+			class="size-6"
+		>
+			<path
+				stroke-linecap="round"
+				stroke-linejoin="round"
+				d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.325.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.26 1.431l-1.003.827c-.293.241-.438.613-.43.992a7.723 7.723 0 0 1 0 .255c-.008.378.137.75.43.991l1.004.827c.424.35.534.955.26 1.43l-1.298 2.247a1.125 1.125 0 0 1-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.47 6.47 0 0 1-.22.128c-.331.183-.581.495-.644.869l-.213 1.281c-.09.543-.56.94-1.11.94h-2.594c-.55 0-1.019-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 0 1-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 0 1-1.369-.49l-1.297-2.247a1.125 1.125 0 0 1 .26-1.431l1.004-.827c.292-.24.437-.613.43-.991a6.932 6.932 0 0 1 0-.255c.007-.38-.138-.751-.43-.992l-1.004-.827a1.125 1.125 0 0 1-.26-1.43l1.297-2.247a1.125 1.125 0 0 1 1.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.086.22-.128.332-.183.582-.495.644-.869l.214-1.28Z"
+			/>
+			<path
+				stroke-linecap="round"
+				stroke-linejoin="round"
+				d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"
+			/>
+		</svg>
+
+		Einstellungen
+	</a>
+
+	<div class="flex grow items-end text-sm text-white/50">
+		Cashdesk Version {version} – <a
+			href="https://github.com/ebinf/cashdesk"
+			target="_blank"
+			class="hover:text-white"
+			rel="noopener noreferrer">GitHub</a
+		>
+	</div>
 </div>

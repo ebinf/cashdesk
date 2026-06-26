@@ -1,0 +1,109 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/lib/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+enum Color {
+  red
+  green
+  blue
+  yellow
+  purple
+  orange
+  pink
+  teal
+  rose
+  taupe
+}
+
+model Category {
+  id         Int       @id @default(autoincrement())
+  order      Int
+  name       String
+  color      Color     @default(blue)
+  products   Product[]
+  isArchived Boolean   @default(false)
+}
+
+model Product {
+  id                       Int         @id @default(autoincrement())
+  category                 Category?   @relation(fields: [categoryId], references: [id])
+  categoryId               Int?
+  order                    Int
+  name                     String
+  price                    Int
+  color                    Color?
+  hideInOrders             Boolean     @default(false)
+  variants                 Variant[]
+  variantNameOverridesName Boolean     @default(false)
+  orderItems               OrderItem[]
+  isArchived               Boolean     @default(false)
+}
+
+model Variant {
+  id              Int         @id @default(autoincrement())
+  product         Product     @relation(fields: [productId], references: [id])
+  productId       Int
+  order           Int
+  name            String
+  priceDifference Int?
+  color           Color?
+  orderItems      OrderItem[]
+  isArchived      Boolean     @default(false)
+}
+
+model FloatingOrder {
+  id            Int         @id @default(autoincrement())
+  lastKeepAlive DateTime    @default(now())
+  items         OrderItem[]
+}
+
+model Order {
+  id            Int            @id @default(autoincrement())
+  createdAt     DateTime       @default(now())
+  finishedAt    DateTime?
+  items         OrderItem[]
+  totalPrice    Int
+  paymentMethod String         @default("cash")
+  sumUpPayments SumUpPayment[]
+}
+
+model OrderItem {
+  id              Int            @id @default(autoincrement())
+  floatingOrder   FloatingOrder? @relation(fields: [floatingOrderId], references: [id])
+  floatingOrderId Int?
+  order           Order?         @relation(fields: [orderId], references: [id])
+  orderId         Int?
+  product         Product        @relation(fields: [productId], references: [id])
+  productId       Int
+  variant         Variant?       @relation(fields: [variantId], references: [id])
+  variantId       Int?
+  amount          Int
+  done            Boolean        @default(false)
+}
+
+enum PaymentStatus {
+  waitingForTerminal
+  inProcess
+  pending
+  completed
+  failed
+  cancelled
+  error
+}
+
+model SumUpPayment {
+  id        Int           @id @default(autoincrement())
+  paymentId String?
+  status    PaymentStatus
+  amount    Int
+  orderId   Int?
+  order     Order?        @relation(fields: [orderId], references: [id])
+}

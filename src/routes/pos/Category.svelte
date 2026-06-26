@@ -1,23 +1,29 @@
 <script lang="ts">
-	export let title: string;
-	export let open: boolean = false;
-	export let config: App.Config;
+	import type { Snippet } from 'svelte';
 
-	const itemsPerRow: number = config.itemsPerRow ?? 3;
+	interface Props {
+		title: string;
+		open?: boolean;
+		config: App.Config;
+		children: Snippet;
+	}
+
+	let { title, open = true, config, children }: Props = $props();
 
 	function items(offset: number = 0) {
+		let itemsPerRow: number = config.itemsPerRow || 3;
 		return Math.max(itemsPerRow - offset, 1).toFixed(0);
 	}
 </script>
 
-<div class="py-2 px-2">
+<div class="px-2 py-2">
 	<dt>
 		<button
 			type="button"
-			class="flex w-full items-start text-left text-gray-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600"
+			class="flex w-full items-start text-left text-gray-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600"
 			aria-controls="faq-0"
 			aria-expanded="false"
-			on:click={() => (open = !open)}
+			onclick={() => (open = !open)}
 		>
 			<span class="mx-2 flex h-7 items-center text-gray-400">
 				<svg
@@ -43,16 +49,16 @@
 					<path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
 				</svg>
 			</span>
-			<span class="font-bold uppercase tracking-wider leading-7 text-sm">{title}</span>
+			<span class="text-sm leading-7 font-bold tracking-wider uppercase">{title}</span>
 		</button>
 	</dt>
 	<dd class="mx-2 mt-2" class:hidden={!open}>
-		<p
+		<div
 			class="grid xl:grid-cols-{items(0)} lg:grid-cols-{items(1)} md:grid-cols-{items(
 				2
 			)} sm:grid-cols-{items(3)} grid-cols-{items(4)} gap-2"
 		>
-			<slot />
-		</p>
+			{@render children()}
+		</div>
 	</dd>
 </div>

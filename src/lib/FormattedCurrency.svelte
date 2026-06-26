@@ -1,11 +1,17 @@
 <script lang="ts">
-	export let amount: number;
-	export let showSign: boolean = false;
-	export let config: App.Config;
+	interface Props {
+		amount: number;
+		showSign?: boolean;
+		config: App.Config;
+	}
+
+	let { amount, showSign = false, config }: Props = $props();
 </script>
 
-{#if config.currency.before}{config.currency
-		.before}&nbsp;{/if}{#if showSign && amount > 0}+{/if}{amount.toLocaleString(undefined, {
+{#if config.currency.before}{config.currency.before}&#8239;{/if}{#if showSign && amount > 0}+{/if}{(
+	amount /
+	10 ** config.currency.digits
+).toLocaleString(undefined, {
 	minimumFractionDigits: config.currency.digits,
 	maximumFractionDigits: config.currency.digits
-})}{#if config.currency.after}&nbsp;{config.currency.after}{/if}
+})}{#if config.currency.after}&#8239;{config.currency.after}{/if}

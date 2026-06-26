@@ -1,37 +1,52 @@
 <script lang="ts">
 	import FormattedCurrency from '$lib/FormattedCurrency.svelte';
-	import { createEventDispatcher } from 'svelte';
+	import { type Prisma, type Variant } from '$lib/prisma/client';
+	import { Color } from '$lib/prisma/enums';
 
-	const dispatch = createEventDispatcher();
+	interface Props {
+		config: App.Config;
+		categoryColor?: Color;
+		openItem: Prisma.ProductGetPayload<{ include: { variants: true } }> | null;
+		onselected: (variant: Variant) => void;
+		oncancel: () => void;
+	}
 
-	export let config: App.Config;
-	export let openItem: App.Item | null = null;
+	let { config, categoryColor, openItem, oncancel, onselected }: Props = $props();
 </script>
 
 {#if openItem !== null && openItem.variants}
 	<div
-		class="bg-black bg-opacity-40 rounded-xl backdrop-blur-sm absolute bottom-0 left-0 right-0 top-0 items-center justify-center flex"
+		class="absolute top-0 right-0 bottom-0 left-0 flex items-center justify-center rounded-xl bg-black/40 backdrop-blur-sm"
 	>
-		<div class="bg-gray-50 w-4/5 rounded-lg max-w-2xl shadow-xl overflow-hidden p-4">
-			<div class="flex flex-row gap-4 justify-start mb-4">
-				{#each openItem.variants as variant}
+		<div class="w-4/5 max-w-2xl overflow-hidden rounded-lg bg-gray-50 p-4 shadow-xl">
+			<div class="mb-4 flex flex-row flex-wrap justify-around gap-4">
+				{#each openItem.variants.filter((v) => !v.isArchived) as variant (variant.id)}
+					{@const color: Color = variant.color ?? openItem.color ?? categoryColor ?? Color.red}
 					<button
-						on:click={() => {
-							dispatch('selected', {
-								variant: variant
-							});
+						onclick={() => {
+							onselected(variant);
 						}}
 						type="button"
-						class="relative w-1/4 aspect-1 rounded-md bg-{variant.color}-600 px-3.5 py-2.5 text-white shadow-sm overflow-hidden focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600"
+						class="relative aspect-square w-1/4 overflow-hidden rounded-md px-3.5 py-2.5 text-white shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600"
+						class:bg-red-600={color === Color.red}
+						class:bg-green-600={color === Color.green}
+						class:bg-blue-600={color === Color.blue}
+						class:bg-yellow-600={color === Color.yellow}
+						class:bg-purple-600={color === Color.purple}
+						class:bg-orange-600={color === Color.orange}
+						class:bg-pink-600={color === Color.pink}
+						class:bg-teal-600={color === Color.teal}
+						class:bg-rose-600={color === Color.rose}
+						class:bg-taupe-600={color === Color.taupe}
 					>
-						<p class="text-xl font-semibold text-ellipsis overflow-hidden leading-tight">
+						<p class="overflow-hidden text-xl leading-tight font-semibold text-ellipsis">
 							{@html variant.name.replace(
 								/\*(\S+)\*/g,
 								'<span class="font-extrabold italic">$1</span>'
 							)}
 						</p>
 						{#if openItem.variants.some((v) => v.priceDifference !== undefined && v.priceDifference !== 0)}
-							<p class="text-base pt-2">
+							<p class="pt-2 text-base">
 								<FormattedCurrency showSign={true} amount={variant.priceDifference ?? 0} {config} />
 							</p>
 						{/if}
@@ -39,9 +54,9 @@
 				{/each}
 			</div>
 			<button
-				on:click={() => dispatch('cancel')}
+				onclick={oncancel}
 				type="button"
-				class="w-full rounded-md bg-gray-50 px-3.5 py-4 text-base font-semibold text-gray-600 border-gray-300 border focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600"
+				class="w-full rounded-md border border-gray-300 bg-gray-50 px-3.5 py-4 text-base font-semibold text-gray-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600"
 			>
 				Abbrechen
 			</button>

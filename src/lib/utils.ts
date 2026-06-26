@@ -1,35 +1,28 @@
-export const itemIdToItem = (config: App.Config, id: string): App.Item | undefined => {
-	for (const category of config.categories) {
-		for (const item of category.items) {
-			if (item.id === id) {
-				return item;
-			}
-		}
-	}
-};
+import type { Prisma, Product, Variant } from './prisma/client';
 
 export const getOrderItem = (
-	config: App.Config,
-	id: string
-): { item: App.Item; variant?: App.Variant; price: number } | undefined => {
-	const [itemId, variantId] = id.split('-');
-	const item = config.categories
-		.flatMap((category) => category.items)
-		.find((item) => item.id === itemId);
-	if (!item) return undefined;
-	if (variantId && item.variants && item.variants.length > 0) {
-		const variant = item.variants.find((v) => v.idSuffix === variantId);
-		console.log('Variant', variant);
-		if (variant)
-			return {
-				item: item,
-				variant: variant,
-				price: item.price + (variant.priceDifference ?? 0)
+	categories: Prisma.CategoryGetPayload<{
+		include: {
+			products: {
+				include: {
+					variants: true;
+				};
 			};
+		};
+	}>[],
+	id: number,
+	variantId?: number
+): (Product & { variant?: Variant }) | null => {
+	for (const category of categories) {
+		for (const product of category.products) {
+			if (variantId !== undefined) {
+				const variant = product.variants?.find((v) => v.id === variantId);
+				if (variant) {
+					return { ...product, variant, price: product.price + (variant.priceDifference ?? 0) };
+				}
+			}
+			if (product.id === id) return product;
+		}
 	}
-	return {
-		item: item,
-		variant: undefined,
-		price: item.price
-	};
+	return null;
 };

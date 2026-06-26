@@ -1,78 +1,99 @@
 <script lang="ts">
 	import FormattedCurrency from '$lib/FormattedCurrency.svelte';
-	import { createEventDispatcher } from 'svelte';
 
-	const dispatch = createEventDispatcher();
+	interface Props {
+		open: boolean;
+		totalPrice: number;
+		config: App.Config;
+		onpayed: () => void;
+		oncancel: () => void;
+	}
 
-	export let open: boolean = false;
-	export let totalPrice: number;
-	export let config: App.Config;
+	let { open = $bindable(false), totalPrice, config, onpayed, oncancel }: Props = $props();
 
-	let payed: number = 0;
-	$: paymentLeft = totalPrice - payed;
+	let payed: number = $state(0);
+	let paymentLeft: number = $derived(totalPrice - payed);
+	let submitting: boolean = $state(false);
 
 	const paymentOptions = [50, 20, 10, 5, 2, 1, 0.5, 0.2, 0.1, 0.05, 0.02, 0.01];
-	let smartPaymentOptions: number[];
-	$: {
+	let smartPaymentOptions: number[] = $state([]);
+	$effect(() => {
 		let smartPaymentOptionsSet = new Set<number>();
 		paymentOptions
-			.filter((option) => option < totalPrice)
+			.filter((option) => option * 10 ** config.currency.digits < totalPrice)
 			.forEach((option) => {
-				let priceDifference = totalPrice * 100 - option * 100;
-				let current = option * 100;
+				let priceDifference = totalPrice - option * 10 ** config.currency.digits;
+				let current = option * 10 ** config.currency.digits;
 				while (priceDifference > 0) {
-					priceDifference -= option * 100;
-					current += option * 100;
+					priceDifference -= option * 10 ** config.currency.digits;
+					current += option * 10 ** config.currency.digits;
 				}
-				smartPaymentOptionsSet.add(current);
+				smartPaymentOptionsSet.add(current * 10 ** config.currency.digits);
 			});
 		paymentOptions.forEach((option) => {
-			smartPaymentOptionsSet.delete(option * 100);
+			smartPaymentOptionsSet.delete(option * 10 ** config.currency.digits);
 		}); // Remove exact payment options to avoid confusion
-		smartPaymentOptionsSet.add(totalPrice * 100); // Always include the total price as an option
+		smartPaymentOptionsSet.add(totalPrice * 10 ** config.currency.digits); // Always include the total price as an option
 		smartPaymentOptionsSet.delete(0); // Remove zero to avoid confusion
 		smartPaymentOptions = Array.from(smartPaymentOptionsSet)
 			.sort((a, b) => a - b)
-			.map((value) => value / 100);
-	}
+			.map((value) => value / 10 ** config.currency.digits);
+	});
 </script>
 
 {#if open}
 	<div
-		class="bg-black bg-opacity-40 rounded-xl backdrop-blur-sm absolute bottom-0 left-0 right-0 top-0 items-center justify-center flex"
+		class="absolute top-0 right-0 bottom-0 left-0 flex items-center justify-center rounded-xl bg-black/40 backdrop-blur-sm"
 	>
-		<div class="bg-gray-50 w-4/5 rounded-lg shadow-xl grid grid-cols-2 overflow-hidden">
-			<div class="p-4 flex gap-y-4 flex-col">
+		<div class="grid w-4/5 grid-cols-2 overflow-hidden rounded-lg bg-gray-50 shadow-xl">
+			<div class="flex flex-col gap-y-4 p-4" class:blur-xs={submitting}>
 				<div class="grow">
 					<div class="grid grid-cols-2 gap-4">
 						{#each [50, 20, 10, 5] as amount}
 							<button
-								on:click={() => (payed += amount)}
+								onclick={() => (payed += amount * 10 ** config.currency.digits)}
+								disabled={submitting}
 								type="button"
-								class=" aspect-2 shadow-xl bg-money-{amount.toFixed(
-									config.currency.digits
-								)} bg-cover"
-							></button>
+								class="aspect-2/1 overflow-hidden shadow-xl"
+							>
+								<img
+									src={`/money/${amount.toFixed(config.currency.digits)}.jpg`}
+									alt={amount.toFixed(config.currency.digits)}
+									class="h-full w-full object-cover"
+								/>
+								<span class="sr-only">
+									<FormattedCurrency amount={amount * 10 ** config.currency.digits} {config} />
+								</span>
+							</button>
 						{/each}
 					</div>
-					<div class="grid grid-cols-4 gap-4 mt-4">
+					<div class="mt-4 grid grid-cols-4 gap-4">
 						{#each [2, 1, 0.5, 0.2, 0.1, 0.05, 0.02, 0.01] as amount}
 							<button
-								on:click={() => (payed += amount)}
+								onclick={() => (payed += amount * 10 ** config.currency.digits)}
+								disabled={submitting}
 								type="button"
-								class=" aspect-1 rounded-full shadow-xl bg-money-{amount.toFixed(
-									config.currency.digits
-								)} bg-cover"
-							></button>
+								class="aspect-square overflow-hidden rounded-full shadow-xl"
+							>
+								<img
+									src={`/money/${amount.toFixed(config.currency.digits)}.jpg`}
+									alt={amount.toFixed(config.currency.digits)}
+									class="h-full w-full object-cover"
+								/>
+								<span class="sr-only">
+									<FormattedCurrency amount={amount * 10 ** config.currency.digits} {config} />
+								</span>
+							</button>
 						{/each}
 					</div>
 				</div>
 				<div class="flex flex-row flex-wrap gap-3">
 					{#each smartPaymentOptions as smartPaymentOption}
 						<button
-							on:click={() => (payed = smartPaymentOption)}
+							onclick={() => (payed = smartPaymentOption)}
+							disabled={submitting}
 							type="button"
-							class="rounded-md bg-gray-600 px-3.5 py-4 text-base font-semibold text-white shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600"
+							class="rounded-md bg-gray-600 px-3.5 py-4 text-base font-semibold text-white shadow-sm first:bg-green-700 first:px-6 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600"
 						>
 							<FormattedCurrency amount={smartPaymentOption} {config} />
 						</button>
@@ -80,15 +101,16 @@
 				</div>
 				<div>
 					<button
-						on:click={() => (payed = 0)}
+						onclick={() => (payed = 0)}
+						disabled={submitting}
 						type="button"
-						class="w-full rounded-md bg-gray-50 px-3.5 py-4 text-base font-semibold text-gray-600 border-gray-300 border focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600"
+						class="w-full rounded-md border border-gray-300 bg-gray-50 px-3.5 py-4 text-base font-semibold text-gray-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600"
 					>
 						Löschen
 					</button>
 				</div>
 			</div>
-			<div class="p-4 flex flex-col justify-between bg-gray-200">
+			<div class="flex flex-col justify-between bg-gray-200 p-4">
 				<dl class="mb-12 space-y-6 text-2xl font-medium text-gray-900">
 					<div class="flex items-center justify-between">
 						<dt class="text-gray-700">Zwischensumme</dt>
@@ -110,20 +132,52 @@
 				<div class="flex flex-col gap-4">
 					<button
 						type="button"
-						disabled={Math.round(paymentLeft * 100) > 0}
-						on:click={() => {
+						disabled={Math.round(paymentLeft * 10 ** config.currency.digits) > 0 || submitting}
+						onclick={async () => {
+							submitting = true;
+							await onpayed();
 							open = false;
 							payed = 0;
-							dispatch('payed');
+							submitting = false;
 						}}
-						class="w-full rounded-md bg-gray-600 px-3.5 py-10 text-2xl font-semibold text-white shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600 disabled:bg-gray-400 disabled:cursor-not-allowed"
+						class="w-full rounded-md bg-gray-600 px-3.5 py-10 text-2xl font-semibold text-white shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600 disabled:cursor-not-allowed disabled:bg-gray-400"
 					>
-						Bestellung abschließen
+						{#if submitting}
+							<svg
+								class="mx-auto my-0.5 size-7 animate-spin text-white"
+								xmlns="http://www.w3.org/2000/svg"
+								fill="none"
+								viewBox="0 0 24 24"
+							>
+								<circle
+									class="opacity-25"
+									cx="12"
+									cy="12"
+									r="10"
+									stroke="currentColor"
+									stroke-width="4"
+								></circle>
+								<path
+									class="opacity-75"
+									fill="currentColor"
+									d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+								></path>
+							</svg>
+						{:else}
+							Bestellung abschließen
+						{/if}
 					</button>
 					<button
-						on:click={() => dispatch('cancel')}
+						onclick={async () => {
+							submitting = true;
+							await oncancel();
+							open = false;
+							payed = 0;
+							submitting = false;
+						}}
+						disabled={submitting}
 						type="button"
-						class="w-full rounded-md bg-gray-50 px-3.5 py-4 text-base font-semibold text-gray-600 border-gray-300 border focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600"
+						class="w-full rounded-md border border-gray-300 bg-gray-50 px-3.5 py-4 text-base font-semibold text-gray-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600 disabled:cursor-not-allowed disabled:bg-gray-200"
 					>
 						Abbrechen
 					</button>

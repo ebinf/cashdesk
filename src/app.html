@@ -1,12 +1,15 @@
 <!doctype html>
-<html lang="de" class="h-full select-none cursor-default overflow-hidden bg-gray-800 p-5">
+<html lang="de" class="h-full cursor-default overflow-hidden bg-gray-800 select-none">
 	<head>
 		<meta charset="utf-8" />
-		<link rel="icon" href="%sveltekit.assets%/favicon.png" />
-		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<meta
+			name="viewport"
+			content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0"
+		/>
+		<meta name="text-scale" content="scale" />
 		%sveltekit.head%
 	</head>
-	<body class="h-full">
+	<body data-sveltekit-preload-data="hover" id="#content" class="h-full p-5">
 		<div style="display: contents">%sveltekit.body%</div>
 	</body>
 </html>

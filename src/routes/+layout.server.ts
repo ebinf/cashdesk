@@ -1,0 +1,38 @@
+import { defaultSettings } from '$lib/defaultSettings';
+import { client } from '$lib/server/database';
+import { CONFIG_PATH } from '$lib/server/environment';
+import type { LayoutServerLoad } from './$types';
+import fs from 'node:fs/promises';
+
+export const load: LayoutServerLoad = async ({ locals }) => {
+	const categories = await client.category.findMany({
+		orderBy: {
+			order: 'asc'
+		},
+		include: {
+			products: {
+				include: {
+					variants: {
+						orderBy: {
+							order: 'asc'
+						}
+					}
+				},
+				orderBy: {
+					order: 'asc'
+				}
+			}
+		}
+	});
+
+	try {
+		const config: App.Config = JSON.parse(await fs.readFile(CONFIG_PATH, 'utf-8'));
+		if (config.cardPayment?.sumUpIntegration?.accessToken) {
+			config.cardPayment.sumUpIntegration.accessToken = '__UNCHANGED__';
+		}
+		return { categories, config };
+	} catch (error) {
+		console.error('Error reading config:', error);
+		return { categories, config: defaultSettings };
+	}
+};
